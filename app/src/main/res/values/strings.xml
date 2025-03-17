@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">Mobile_phone_subscription</string>
+    <string name="app_name">Mobilcsmag előfizetés</string>
+    <string name="name">Felhasználónév</string>
+    <string name="password">Jelszó</string>
+    <string name="password_again">Jelszó mégegyszer</string>
+    <string name="login_button">Bejelentkezés</string>
 </resources>

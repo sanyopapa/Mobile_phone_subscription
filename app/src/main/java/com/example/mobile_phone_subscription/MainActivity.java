@@ -1,6 +1,8 @@
 package com.example.mobile_phone_subscription;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,5 +22,11 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    public void login(View view) {
+        EditText userName = findViewById(R.id.editTextUsername);
+        EditText password = findViewById(R.id.editTextPassword);
+        EditText passwordConfirm = findViewById(R.id.editTextPasswordAgain);
     }
 }
