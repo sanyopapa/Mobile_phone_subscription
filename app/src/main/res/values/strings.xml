@@ -4,4 +4,8 @@
     <string name="password">Jelszó</string>
     <string name="login_button">Bejelentkezés</string>
     <string name="register">Regisztráció</string>
+    <string name="back">Mégsem</string>
+    <string name="passwordAgain">Jelszó újra</string>
+    <string name="emailAddress">Email cím</string>
+    <string name="phoneNumber">Telefonszám</string>
 </resources>

@@ -48,7 +48,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:onClick="register"
+            android:onClick="toRegister"
             android:text="@string/register"
             app:layout_constraintVertical_bias="0.091" />
     </LinearLayout>
