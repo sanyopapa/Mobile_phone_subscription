@@ -8,4 +8,6 @@
     <string name="passwordAgain">Jelszó újra</string>
     <string name="emailAddress">Email cím</string>
     <string name="phoneNumber">Telefonszám</string>
+    <string name="bejelentkezes_google_lel">Bejelentkezés Google-lel</string>
+    <string name="regisztraci_google_lel">Regisztráció Google-lel</string>
 </resources>

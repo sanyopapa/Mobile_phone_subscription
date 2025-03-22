@@ -90,4 +90,7 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("SECRET_KEY", SECRET_KEY);
         startActivity(intent);
     }
+
+    public void toLoginWithGoogle(View view) {
+    }
 }

@@ -9,15 +9,22 @@ package com.example.mobile_phone_subscription;
         import android.widget.Toast;
 
         import androidx.activity.EdgeToEdge;
+        import androidx.annotation.NonNull;
         import androidx.appcompat.app.AppCompatActivity;
         import androidx.core.graphics.Insets;
         import androidx.core.view.ViewCompat;
         import androidx.core.view.WindowInsetsCompat;
 
-        public class Register extends AppCompatActivity {
+        import com.google.android.gms.tasks.OnCompleteListener;
+        import com.google.android.gms.tasks.Task;
+        import com.google.firebase.auth.AuthResult;
+        import com.google.firebase.auth.FirebaseAuth;
+
+public class Register extends AppCompatActivity {
             private static final String LOG_TAG = Register.class.getName();
             private static final String PEF_KEY = MainActivity.class.getPackage().toString();
             private SharedPreferences preferences;
+            private FirebaseAuth mAuth;
             EditText newUsernameET;
             EditText passwordET;
             EditText passwordAgainET;
@@ -45,6 +52,9 @@ package com.example.mobile_phone_subscription;
                     newUsernameET.setText(username);
                     passwordET.setText(password);
                     passwordAgainET.setText(password);
+
+                    mAuth = FirebaseAuth.getInstance();
+
                     return insets;
                 });
                 int secret_key = getIntent().getIntExtra("SECRET_KEY", 0);
@@ -103,10 +113,33 @@ package com.example.mobile_phone_subscription;
                 }
 
                 Log.i(LOG_TAG, "New Username: " + newUsername + " Password: " + password + " Password Again: " + passwordAgain + " Email: " + email + " Phone: " + phone);
+
+                mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()){
+                            Log.d(LOG_TAG, "createUserWithEmail:success");
+                            startShopping();
+                        }else
+                        {
+                            Log.d(LOG_TAG, "createUserWithEmail:failed");
+                            Toast.makeText(Register.this, "Authentication failed." + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
             }
 
             public void back(View view) {
                 Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+            }
+
+            public void toRegisterWithGoogle(View view) {
+
+            }
+
+            public void startShopping() {
+                Intent intent = new Intent(this, Shopping.class);
                 startActivity(intent);
             }
         }
