@@ -26,6 +26,8 @@ import android.os.Bundle;
                     private FirebaseUser user;
                     private RecyclerView recyclerViewPlans;
                     private Button buttonPurchase;
+                    private Button toLoginButton;
+                    private Button logoutButton;
                     private List<Plan> planList;
                     private PlanAdapter planAdapter;
 
@@ -39,12 +41,18 @@ import android.os.Bundle;
                             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
                             user = FirebaseAuth.getInstance().getCurrentUser();
-                            if (user != null){
+                            logoutButton = findViewById(R.id.toLogoutButton);
+                            toLoginButton = findViewById(R.id.toLoginButton);
+                            if (user != null) {
                                 Log.d(LOG_TAG, "Authenticated user: " + user.getEmail());
-                                if (user.isAnonymous()) {
-                                    buttonPurchase.setVisibility(View.GONE);
+                                if (user.getPhoneNumber() != null || user.getEmail() != null) {
+                                    toLoginButton.setVisibility(View.GONE);
+                                    logoutButton.setVisibility(View.VISIBLE);
+                                } else {
+                                    toLoginButton.setVisibility(View.VISIBLE);
+                                    logoutButton.setVisibility(View.GONE);
                                 }
-                            }else {
+                            } else {
                                 Log.d(LOG_TAG, "Unauthenticated user");
                                 finish();
                             }
@@ -75,6 +83,13 @@ import android.os.Bundle;
                                 }
                             }
                         });
+                    }
+
+                    public void Logout(View view) {
+                        FirebaseAuth.getInstance().signOut();
+                        Intent intent = new Intent(this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
                     }
 
                     public void openLoginPage(View view) {

@@ -22,6 +22,16 @@
                 android:layout_marginTop="20dp"
                 tools:ignore="RtlHardcoded" />
 
+            <Button
+                android:id="@+id/toLogoutButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kijelentkezés"
+                android:layout_gravity="right"
+                android:onClick="Logout"
+                android:layout_marginTop="20dp"
+                tools:ignore="RtlHardcoded" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewPlans"
                 android:layout_width="match_parent"
