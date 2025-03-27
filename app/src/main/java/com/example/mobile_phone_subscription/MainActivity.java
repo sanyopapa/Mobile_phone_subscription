@@ -16,7 +16,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.safetynet.SafetyNet;
+import com.google.android.gms.safetynet.SafetyNetApi;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthCredential;
@@ -64,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -94,48 +97,68 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         } else {
-            // Phone number-based login
-            PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
-                    .setPhoneNumber(input)       // Phone number to verify
-                    .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
-                    .setActivity(this)                 // Activity (for callback binding)
-                    .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            // Phone number-based login with reCAPTCHA
+            String siteKey = getString(R.string.recaptcha_site_key);
+            SafetyNet.getClient(this).verifyWithRecaptcha(siteKey)
+                    .addOnSuccessListener(this, new OnSuccessListener<SafetyNetApi.RecaptchaTokenResponse>() {
                         @Override
-                        public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-                            mAuth.signInWithCredential(credential).addOnCompleteListener(MainActivity.this, new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(@NonNull Task<AuthResult> task) {
-                                    if (task.isSuccessful()) {
-                                        Log.d(LOG_TAG, "signInWithPhone:success");
-                                        startShopping();
-                                    } else {
-                                        Log.w(LOG_TAG, "signInWithPhone:failure", task.getException());
-                                        Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            });
-                        }
+                        public void onSuccess(SafetyNetApi.RecaptchaTokenResponse response) {
+                            if (!response.getTokenResult().isEmpty()) {
+                                // reCAPTCHA verification successful, proceed with Phone Authentication
+                                PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
+                                        .setPhoneNumber(input)       // Phone number to verify
+                                        .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
+                                        .setActivity(MainActivity.this)    // Activity (for callback binding)
+                                        .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                                            @Override
+                                            public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
+                                                mAuth.signInWithCredential(credential).addOnCompleteListener(MainActivity.this, new OnCompleteListener<AuthResult>() {
+                                                    @Override
+                                                    public void onComplete(@NonNull Task<AuthResult> task) {
+                                                        if (task.isSuccessful()) {
+                                                            Log.d(LOG_TAG, "signInWithPhone:success");
+                                                            startShopping();
+                                                        } else {
+                                                            Log.w(LOG_TAG, "signInWithPhone:failure", task.getException());
+                                                            Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                                                        }
+                                                    }
+                                                });
+                                            }
 
-                        @Override
-                        public void onVerificationFailed(@NonNull FirebaseException e) {
-                            Log.w(LOG_TAG, "onVerificationFailed", e);
-                            Toast.makeText(MainActivity.this, "Verification failed.", Toast.LENGTH_SHORT).show();
-                        }
+                                            @Override
+                                            public void onVerificationFailed(@NonNull FirebaseException e) {
+                                                Log.w(LOG_TAG, "onVerificationFailed", e);
+                                                Toast.makeText(MainActivity.this, "Verification failed.", Toast.LENGTH_SHORT).show();
+                                            }
 
-                        @Override
-                        public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                            // Save verification ID and resending token so we can use them later
-                            // Prompt the user to enter the verification code
-                            Log.d(LOG_TAG, "onCodeSent:" + verificationId);
-                            // Store verificationId and token for later use
-                            MainActivity.this.verificationId = verificationId;
-                            MainActivity.this.resendToken = token;
-                            // Prompt user to enter the verification code
-                            promptForVerificationCode();
+                                            @Override
+                                            public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
+                                                // Save verification ID and resending token so we can use them later
+                                                // Prompt the user to enter the verification code
+                                                Log.d(LOG_TAG, "onCodeSent:" + verificationId);
+                                                // Store verificationId and token for later use
+                                                MainActivity.this.verificationId = verificationId;
+                                                MainActivity.this.resendToken = token;
+                                                // Prompt user to enter the verification code
+                                                promptForVerificationCode();
+                                            }
+                                        })
+                                        .build();
+                                PhoneAuthProvider.verifyPhoneNumber(options);
+                            } else {
+                                // reCAPTCHA verification failed
+                                Toast.makeText(MainActivity.this, "reCAPTCHA verification failed", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     })
-                    .build();
-            PhoneAuthProvider.verifyPhoneNumber(options);
+                    .addOnFailureListener(this, new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            // Error during reCAPTCHA verification
+                            Toast.makeText(MainActivity.this, "Error during reCAPTCHA verification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
         }
     }
 

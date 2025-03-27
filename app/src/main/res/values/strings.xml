@@ -12,4 +12,5 @@
     <string name="regisztraci_google_lel">Regisztráció Google-lel</string>
     <string name="fioknelkulezelodom">Fiók nélkül nézelődöm</string>
     <string name="default_web_client_id">169274008142-ina4jak3h8h1t3sfal3ftm670l3j936s.apps.googleusercontent.com</string>
+    <string name="recaptcha_site_key">6Ld2jAErAAAAAJvEDyEFNkofShxoXPJU-1brUCq6</string>
 </resources>
