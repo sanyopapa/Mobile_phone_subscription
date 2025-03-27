@@ -33,6 +33,7 @@
             android:hint="@string/name"
             android:inputType="text"
             android:layout_marginTop="20dp"
+            android:autofillHints="username"
             tools:layout_editor_absoluteX="-16dp" />
 
         <EditText
@@ -43,6 +44,7 @@
             android:hint="@string/password"
             android:inputType="textPassword"
             android:layout_marginTop="20dp"
+            android:autofillHints="password"
             tools:layout_editor_absoluteX="-16dp" />
 
         <EditText
@@ -53,6 +55,7 @@
             android:hint="@string/passwordAgain"
             android:inputType="textPassword"
             android:layout_marginTop="20dp"
+            android:autofillHints="password"
             tools:layout_editor_absoluteX="-16dp" />
         <EditText
             android:id="@+id/editTextTextEmailAddress"
@@ -61,6 +64,7 @@
             android:hint="@string/emailAddress"
             android:layout_marginTop="20dp"
             android:ems="10"
+            android:autofillHints="emailAddress"
             android:inputType="textEmailAddress" />
 
         <EditText
@@ -70,6 +74,7 @@
             android:hint="@string/phoneNumber"
             android:layout_marginTop="20dp"
             android:ems="10"
+            android:autofillHints="phoneNumber"
             android:inputType="phone" />
 
         <LinearLayout
@@ -96,22 +101,6 @@
                 android:onClick="register"
                 android:text="@string/register"
                 app:layout_constraintVertical_bias="0.091" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_gravity="center_horizontal">
-
-            <Button
-                android:id="@+id/loginWithGoogleButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:onClick="toRegisterWithGoogle"
-                android:text="@string/regisztraci_google_lel"
-                app:layout_constraintVertical_bias="0.091"
-                tools:ignore="OnClick" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
