@@ -26,6 +26,17 @@
             android:text="Regisztráció" />
 
         <EditText
+            android:id="@+id/editTextTextEmailAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/emailAddress"
+            android:layout_marginTop="20dp"
+            android:ems="10"
+            android:autofillHints=""
+            android:importantForAutofill="noExcludeDescendants"
+            android:inputType="textEmailAddress" />
+
+        <EditText
             android:id="@+id/editTextNewUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -33,8 +44,20 @@
             android:hint="@string/name"
             android:inputType="text"
             android:layout_marginTop="20dp"
-            android:autofillHints="username"
+            android:autofillHints=""
+            android:importantForAutofill="noExcludeDescendants"
             tools:layout_editor_absoluteX="-16dp" />
+
+        <EditText
+            android:id="@+id/editTextPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/phoneNumber"
+            android:layout_marginTop="20dp"
+            android:ems="10"
+            android:autofillHints=""
+            android:importantForAutofill="noExcludeDescendants"
+            android:inputType="phone" />
 
         <EditText
             android:id="@+id/editTextPassword"
@@ -44,7 +67,8 @@
             android:hint="@string/password"
             android:inputType="textPassword"
             android:layout_marginTop="20dp"
-            android:autofillHints="password"
+            android:autofillHints=""
+            android:importantForAutofill="noExcludeDescendants"
             tools:layout_editor_absoluteX="-16dp" />
 
         <EditText
@@ -55,27 +79,9 @@
             android:hint="@string/passwordAgain"
             android:inputType="textPassword"
             android:layout_marginTop="20dp"
-            android:autofillHints="password"
+            android:autofillHints=""
+            android:importantForAutofill="noExcludeDescendants"
             tools:layout_editor_absoluteX="-16dp" />
-        <EditText
-            android:id="@+id/editTextTextEmailAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/emailAddress"
-            android:layout_marginTop="20dp"
-            android:ems="10"
-            android:autofillHints="emailAddress"
-            android:inputType="textEmailAddress" />
-
-        <EditText
-            android:id="@+id/editTextPhone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/phoneNumber"
-            android:layout_marginTop="20dp"
-            android:ems="10"
-            android:autofillHints="phoneNumber"
-            android:inputType="phone" />
 
         <LinearLayout
             android:layout_width="wrap_content"

@@ -1,5 +1,6 @@
 package com.example.mobile_phone_subscription;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -73,18 +74,25 @@ public class Register extends AppCompatActivity {
     }
 
     public void register(View view) {
-        String newUsername = newUsernameET.getText().toString();
-        String password = passwordET.getText().toString();
-        String passwordAgain = passwordAgainET.getText().toString();
-        String email = emailET.getText().toString();
-        String phone = phoneET.getText().toString();
+        String newUsername = newUsernameET.getText().toString().trim();
+        String password = passwordET.getText().toString().trim();
+        String passwordAgain = passwordAgainET.getText().toString().trim();
+        String email = emailET.getText().toString().trim();
+        String phone = phoneET.getText().toString().trim();
 
-        if (!password.equals(passwordAgain)) {
-            Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+        // Ellenőrizd, hogy a mezők nincsenek-e üresen
+        if (newUsername.isEmpty() || password.isEmpty() || passwordAgain.isEmpty() || email.isEmpty() || phone.isEmpty()) {
+            Toast.makeText(this, "Kérlek töltsd ki az összes mezőt!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.i(LOG_TAG, "New Username: " + newUsername + " Password: " + password + " Password Again: " + passwordAgain + " Email: " + email + " Phone: " + phone);
+        // Ellenőrizd, hogy a jelszavak megegyeznek-e
+        if (!password.equals(passwordAgain)) {
+            Toast.makeText(this, "A jelszavak nem egyeznek!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Log.i(LOG_TAG, "New Username: " + newUsername + " Password: " + password + " Email: " + email + " Phone: " + phone);
 
         mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
@@ -98,7 +106,7 @@ public class Register extends AppCompatActivity {
                     startShopping();
                 } else {
                     Log.d(LOG_TAG, "createUserWithEmail:failed");
-                    Toast.makeText(Register.this, "Authentication failed." + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(Register.this, "Hiba történt: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -111,11 +119,13 @@ public class Register extends AppCompatActivity {
 
     public void back(View view) {
         Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Register.this);
+        startActivity(intent, options.toBundle());
     }
 
     public void startShopping() {
-        Intent intent = new Intent(this, Shopping.class);
-        startActivity(intent);
-    }
+        Intent intent = new Intent(Register.this, Shopping.class);
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Register.this);
+        startActivity(intent, options.toBundle());
+    }    
 }

@@ -1,5 +1,6 @@
 package com.example.mobile_phone_subscription;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -33,6 +34,7 @@ import com.google.firebase.auth.PhoneAuthProvider;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.text.InputType;
@@ -79,87 +81,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void login(View view) {
-        String input = userNameET.getText().toString();
-        String password = passwordET.getText().toString();
+        String input = userNameET.getText().toString().trim();
+        String password = passwordET.getText().toString().trim();
 
-        if (input.contains("@")) {
-            // Email-based login
-            mAuth.signInWithEmailAndPassword(input, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
-                    if (task.isSuccessful()) {
-                        Log.d(LOG_TAG, "signInWithEmail:success");
-                        startShopping();
-                    } else {
-                        Log.w(LOG_TAG, "signInWithEmail:failure", task.getException());
-                        Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-        } else {
-            // Phone number-based login with reCAPTCHA
-            String siteKey = getString(R.string.recaptcha_site_key);
-            SafetyNet.getClient(this).verifyWithRecaptcha(siteKey)
-                    .addOnSuccessListener(this, new OnSuccessListener<SafetyNetApi.RecaptchaTokenResponse>() {
-                        @Override
-                        public void onSuccess(SafetyNetApi.RecaptchaTokenResponse response) {
-                            if (!response.getTokenResult().isEmpty()) {
-                                // reCAPTCHA verification successful, proceed with Phone Authentication
-                                PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
-                                        .setPhoneNumber(input)       // Phone number to verify
-                                        .setTimeout(60L, TimeUnit.SECONDS) // Timeout and unit
-                                        .setActivity(MainActivity.this)    // Activity (for callback binding)
-                                        .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                                            @Override
-                                            public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-                                                mAuth.signInWithCredential(credential).addOnCompleteListener(MainActivity.this, new OnCompleteListener<AuthResult>() {
-                                                    @Override
-                                                    public void onComplete(@NonNull Task<AuthResult> task) {
-                                                        if (task.isSuccessful()) {
-                                                            Log.d(LOG_TAG, "signInWithPhone:success");
-                                                            startShopping();
-                                                        } else {
-                                                            Log.w(LOG_TAG, "signInWithPhone:failure", task.getException());
-                                                            Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
-                                                        }
-                                                    }
-                                                });
-                                            }
-
-                                            @Override
-                                            public void onVerificationFailed(@NonNull FirebaseException e) {
-                                                Log.w(LOG_TAG, "onVerificationFailed", e);
-                                                Toast.makeText(MainActivity.this, "Verification failed.", Toast.LENGTH_SHORT).show();
-                                            }
-
-                                            @Override
-                                            public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                                                // Save verification ID and resending token so we can use them later
-                                                // Prompt the user to enter the verification code
-                                                Log.d(LOG_TAG, "onCodeSent:" + verificationId);
-                                                // Store verificationId and token for later use
-                                                MainActivity.this.verificationId = verificationId;
-                                                MainActivity.this.resendToken = token;
-                                                // Prompt user to enter the verification code
-                                                promptForVerificationCode();
-                                            }
-                                        })
-                                        .build();
-                                PhoneAuthProvider.verifyPhoneNumber(options);
-                            } else {
-                                // reCAPTCHA verification failed
-                                Toast.makeText(MainActivity.this, "reCAPTCHA verification failed", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    })
-                    .addOnFailureListener(this, new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            // Error during reCAPTCHA verification
-                            Toast.makeText(MainActivity.this, "Error during reCAPTCHA verification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+        // Ellenőrizd, hogy a mezők nincsenek-e üresen
+        if (input.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Kérlek töltsd ki az összes mezőt!", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        mAuth.signInWithEmailAndPassword(input, password).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if (task.isSuccessful()) {
+                    Log.d(LOG_TAG, "signInWithEmail:success");
+                    Intent intent = new Intent(MainActivity.this, Shopping.class);
+                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
+                    startActivity(intent, options.toBundle());
+                } else {
+                    Log.w(LOG_TAG, "signInWithEmail:failure", task.getException());
+                    Toast.makeText(MainActivity.this, "Hibás bejelentkezési adatok.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void promptForVerificationCode() {
@@ -208,7 +152,8 @@ public class MainActivity extends AppCompatActivity {
     public void toRegister(View view) {
         Intent intent = new Intent(this, Register.class);
         intent.putExtra("SECRET_KEY", SECRET_KEY);
-        startActivity(intent);
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
+        startActivity(intent, options.toBundle());
     }
 
     public void toLoginAnonymously(View view) {
@@ -216,10 +161,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
-                    Log.d(LOG_TAG, "signInAnonymusly:success");
-                    startShopping();
+                    Log.d(LOG_TAG, "signInAnonymously:success");
+                    Intent intent = new Intent(MainActivity.this, Shopping.class);
+                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
+                    startActivity(intent, options.toBundle());
                 } else {
-                    Log.w(LOG_TAG, "signInAnonymusly:failure", task.getException());
+                    Log.w(LOG_TAG, "signInAnonymously:failure", task.getException());
                     Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
                 }
             }
