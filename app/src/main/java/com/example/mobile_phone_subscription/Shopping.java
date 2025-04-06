@@ -1,5 +1,6 @@
 package com.example.mobile_phone_subscription;
 
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
                 import android.util.Log;
@@ -90,7 +91,8 @@ import android.os.Bundle;
                     public void Logout(View view) {
                         FirebaseAuth.getInstance().signOut();
                         Intent intent = new Intent(this, MainActivity.class);
-                        startActivity(intent);
+                        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
+                        startActivity(intent, options.toBundle());
                         finish();
                     }
 
