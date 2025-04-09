@@ -10,12 +10,12 @@
     tools:context=".MainActivity">
 
     <EditText
-        android:id="@+id/editTextEmailOrPhoneNumber"
+        android:id="@+id/editTextEmail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Email cím/Telefonszám"
-        android:inputType="text"
+        android:hint="Email cím"
+        android:inputType="textEmailAddress"
         android:layout_marginTop="270dp"
         tools:layout_editor_absoluteX="-16dp" />
 

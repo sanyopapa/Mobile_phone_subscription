@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-            userNameET = findViewById(R.id.editTextEmailOrPhoneNumber);
+            userNameET = findViewById(R.id.editTextEmail);
             passwordET = findViewById(R.id.editTextPassword);
 
             preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
