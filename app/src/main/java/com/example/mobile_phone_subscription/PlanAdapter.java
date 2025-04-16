@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class PlanAdapter extends RecyclerView.Adapter<PlanAdapter.PlanViewHolder> {
@@ -35,6 +37,7 @@ public class PlanAdapter extends RecyclerView.Adapter<PlanAdapter.PlanViewHolder
         holder.textViewDetails.setText(plan.getDetails());
         holder.textViewPrice.setText(String.valueOf(plan.getPrice()));
         holder.radioButton.setChecked(position == selectedPosition);
+
 
         if (isAnonymous) {
             holder.radioButton.setVisibility(View.GONE);

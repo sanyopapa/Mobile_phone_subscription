@@ -27,6 +27,7 @@ import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
@@ -71,6 +72,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && user.isAnonymous()) {
+            user.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    if (task.isSuccessful()) {
+                        Log.d(LOG_TAG, "Anonymous user profile deleted.");
+                    } else {
+                        Log.w(LOG_TAG, "Failed to delete anonymous user profile.", task.getException());
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         SharedPreferences.Editor editor = preferences.edit();
@@ -101,49 +121,6 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Log.w(LOG_TAG, "signInWithEmail:failure", task.getException());
                     Toast.makeText(MainActivity.this, "Hibás bejelentkezési adatok.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    private void promptForVerificationCode() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add meg az ellenőrző kódot");
-
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String code = input.getText().toString().trim();
-                verifyPhoneNumberWithCode(verificationId, code);
-            }
-        });
-
-        builder.setNegativeButton("Mégse", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
-            }
-        });
-
-        builder.show();
-    }
-
-
-    private void verifyPhoneNumberWithCode(String verificationId, String code) {
-        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
-        mAuth.signInWithCredential(credential).addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if (task.isSuccessful()) {
-                    Log.d(LOG_TAG, "signInWithCredential:success");
-                    startShopping();
-                } else {
-                    Log.w(LOG_TAG, "signInWithCredential:failure", task.getException());
-                    Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
                 }
             }
         });

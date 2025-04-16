@@ -64,9 +64,9 @@ import android.os.Bundle;
                             recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
 
                             planList = new ArrayList<>();
-                            planList.add(new Plan("Alap csomag", "10GB adat, 100 perc", 10.0));
-                            planList.add(new Plan("Standard csomag", "20GB adat, 200 perc", 20.0));
-                            planList.add(new Plan("Prémium csomag", "50GB adat, korlátlan perc", 50.0));
+                            planList.add(new Plan("Alap csomag", "10GB adat, 100 perc", 10.0, ""));
+                            planList.add(new Plan("Standard csomag", "20GB adat, 200 perc", 20.0, ""));
+                            planList.add(new Plan("Prémium csomag", "50GB adat, korlátlan perc", 50.0, ""));
 
                             planAdapter = new PlanAdapter(planList, user.isAnonymous());
                             recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
@@ -98,6 +98,7 @@ import android.os.Bundle;
 
                     public void openLoginPage(View view) {
                         Intent intent = new Intent(this, MainActivity.class);
-                        startActivity(intent);
+                        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
+                        startActivity(intent, options.toBundle());
                     }
                 }

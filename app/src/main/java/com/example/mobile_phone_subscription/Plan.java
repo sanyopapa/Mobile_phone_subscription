@@ -4,11 +4,13 @@ public class Plan {
     private String name;
     private String details;
     private double price;
+    private String imageUrl;
 
-    public Plan(String name, String details, double price) {
+    public Plan(String name, String details, double price, String imageUrl) {
         this.name = name;
         this.details = details;
         this.price = price;
+        this.imageUrl = imageUrl;
     }
 
     public String getName() {
@@ -22,4 +24,6 @@ public class Plan {
     public double getPrice() {
         return price;
     }
+
+    public String getImageUrl(){return imageUrl;}
 }
