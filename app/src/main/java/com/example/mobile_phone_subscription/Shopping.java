@@ -4,14 +4,17 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
                 import android.util.Log;
-                import android.view.View;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
                 import android.widget.Button;
                 import android.widget.Toast;
 
                 import androidx.activity.EdgeToEdge;
                 import androidx.annotation.NonNull;
                 import androidx.appcompat.app.AppCompatActivity;
-                import androidx.core.graphics.Insets;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
                 import androidx.core.view.ViewCompat;
                 import androidx.core.view.WindowInsetsCompat;
                 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,8 +30,6 @@ import android.os.Bundle;
                     private FirebaseUser user;
                     private RecyclerView recyclerViewPlans;
                     private Button buttonPurchase;
-                    private Button toLoginButton;
-                    private Button logoutButton;
                     private List<Plan> planList;
                     private PlanAdapter planAdapter;
 
@@ -42,18 +43,11 @@ import android.os.Bundle;
                             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
                             user = FirebaseAuth.getInstance().getCurrentUser();
-                            logoutButton = findViewById(R.id.toLogoutButton);
-                            toLoginButton = findViewById(R.id.toLoginButton);
                             buttonPurchase = findViewById(R.id.buttonPurchase);
 
                             if (user != null) {
                                 Log.d(LOG_TAG, "Authenticated user: " + user.getEmail());
-                                if (!user.isAnonymous()) {
-                                    toLoginButton.setVisibility(View.GONE);
-                                    logoutButton.setVisibility(View.VISIBLE);
-                                } else {
-                                    toLoginButton.setVisibility(View.VISIBLE);
-                                    logoutButton.setVisibility(View.GONE);
+                                if (user.isAnonymous()) {
                                     buttonPurchase.setVisibility(View.GONE);
                                 }
                             } else {
@@ -84,6 +78,9 @@ import android.os.Bundle;
                                 }
                             });
 
+                            Toolbar toolbar = findViewById(R.id.toolbar);
+                            setSupportActionBar(toolbar);
+
                             return insets;
                         });
                     }
@@ -100,5 +97,39 @@ import android.os.Bundle;
                         Intent intent = new Intent(this, MainActivity.class);
                         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
                         startActivity(intent, options.toBundle());
+                    }
+
+                    public void openProfilePage(View view) {
+                        Intent intent = new Intent(this, Profile.class);
+                        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
+                        startActivity(intent, options.toBundle());
+                    }
+
+                    @Override
+                    public boolean onCreateOptionsMenu(Menu menu) {
+                        getMenuInflater().inflate(R.menu.shop_list_menu, menu);
+                        menu.findItem(R.id.shop_button).setVisible(false);
+                        if (user != null && user.isAnonymous()) {
+                            menu.findItem(R.id.profile_button).setVisible(false);
+                            menu.findItem(R.id.logout_button).setVisible(false);
+                        } else {
+                            menu.findItem(R.id.to_login_button).setVisible(false);
+                        }
+                        return true;
+                    }
+                    @Override
+                    public boolean onOptionsItemSelected(MenuItem item) {
+                        int id = item.getItemId();
+                        if (id == R.id.logout_button) {
+                            Logout(null);
+                            return true;
+                        } else if (id == R.id.profile_button) {
+                            openProfilePage(null);
+                            return true;
+                        } else if (id == R.id.to_login_button) {
+                            openLoginPage(null);
+                            return true;
+                        }
+                        return super.onOptionsItemSelected(item);
                     }
                 }
