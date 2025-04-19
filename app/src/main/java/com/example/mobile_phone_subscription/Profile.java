@@ -6,8 +6,10 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,67 +20,120 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class Profile extends AppCompatActivity {
 
-    private EditText editTextName, editTextEmail, editTextPhone;
+    private EditText editTextName, editTextPhone, editTextPassword, editTextPasswordAgain;
+    private TextView TextEmail;
     private Button buttonSave, buttonReset;
     private FirebaseUser user;
+    private FirebaseFirestore firestore;
+
+    private View linearLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+        firestore = FirebaseFirestore.getInstance();
+        initializeViews();
+        setupToolbar();
+        loadUserData();
+
+        buttonSave.setOnClickListener(v -> saveUserData());
+        buttonReset.setOnClickListener(v -> loadUserData());
+    }
+
+    private void initializeViews() {
         editTextName = findViewById(R.id.editTextName);
-        editTextEmail = findViewById(R.id.editTextEmail);
+        TextEmail = findViewById(R.id.textViewEmail);
         editTextPhone = findViewById(R.id.editTextPhone);
+        editTextPassword = findViewById(R.id.editTextPassword);
+        editTextPasswordAgain = findViewById(R.id.editTextPasswordAgain);
         buttonSave = findViewById(R.id.buttonSave);
         buttonReset = findViewById(R.id.buttonReset);
+    }
 
+    private void setupToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (view, insets) -> {
+        linearLayout = findViewById(R.id.main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(linearLayout, (v, insets) -> {
             Insets systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            view.setPadding(systemBarsInsets.left, systemBarsInsets.top, systemBarsInsets.right, systemBarsInsets.bottom);
+            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            layoutParams.topMargin = systemBarsInsets.top;
+            v.setLayoutParams(layoutParams);
             return insets;
         });
+    }
 
+    private void loadUserData() {
         user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
-            editTextName.setText(user.getDisplayName());
-            editTextEmail.setText(user.getEmail());
-            editTextPhone.setText(""); // Handle phone number separately if needed
+            String email = user.getEmail();
+            TextEmail.setText(email != null ? email : "");
+
+            firestore.collection("users").document(user.getUid())
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            String name = documentSnapshot.getString("name");
+                            String phone = documentSnapshot.getString("phone");
+
+                            editTextName.setText(name != null ? name : "");
+                            editTextPhone.setText(phone != null ? phone : "");
+                        } else {
+                            showToast("Nem találtam betöltendő adatot!");
+                        }
+                    })
+                    .addOnFailureListener(e -> showToast("Hiba történt az adatok betöltése közben!"));
         }
+    }
 
-        buttonSave.setOnClickListener(v -> {
-            String name = editTextName.getText().toString();
-            String email = editTextEmail.getText().toString();
-            String phone = editTextPhone.getText().toString();
+    private void saveUserData() {
+        String name = editTextName.getText().toString();
+        String email = TextEmail.getText().toString();
+        String phone = editTextPhone.getText().toString();
+        String password = editTextPassword.getText().toString();
+        String passwordAgain = editTextPasswordAgain.getText().toString();
 
-            Toast.makeText(Profile.this, "Adatok mentve!", Toast.LENGTH_SHORT).show();
-        });
-
-        buttonReset.setOnClickListener(v -> {
-            if (user != null) {
-                editTextName.setText(user.getDisplayName());
-                editTextEmail.setText(user.getEmail());
-                editTextPhone.setText(""); // Reset phone number
+        if (user != null) {
+            if (!password.isEmpty() && password.equals(passwordAgain)) {
+                user.updatePassword(password)
+                    .addOnSuccessListener(aVoid -> showToast("Jelszó sikeresen frissítve!"))
+                    .addOnFailureListener(e -> showToast("Hiba történt a jelszó frissítése során!"));
+            } else if (!password.isEmpty()) {
+                showToast("A jelszavak nem egyeznek!");
+                return;
             }
-        });
+
+            firestore.collection("users").document(user.getUid())
+                .update("name", name, "phone", phone)
+                .addOnSuccessListener(aVoid -> showToast("Adatok sikeresen mentve!"))
+                .addOnFailureListener(e -> showToast("Hiba történt az adatok mentése során!"));
+        }
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(Profile.this, message, Toast.LENGTH_SHORT).show();
     }
 
     public void Logout(View view) {
         FirebaseAuth.getInstance().signOut();
-        Intent intent = new Intent(this, MainActivity.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Profile.this);
-        startActivity(intent, options.toBundle());
+        navigateTo(MainActivity.class);
         finish();
     }
 
     public void ToShopping(View view) {
-        Intent intent = new Intent(this, Shopping.class);
+        navigateTo(Shopping.class);
+    }
+
+    private void navigateTo(Class<?> targetActivity) {
+        Intent intent = new Intent(this, targetActivity);
         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Profile.this);
         startActivity(intent, options.toBundle());
     }
@@ -96,7 +151,6 @@ public class Profile extends AppCompatActivity {
         int id = item.getItemId();
         if (id == R.id.logout_button) {
             Logout(null);
-            finish();
             return true;
         } else if (id == R.id.shop_button) {
             ToShopping(null);

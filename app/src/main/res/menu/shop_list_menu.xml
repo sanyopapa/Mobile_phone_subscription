@@ -5,7 +5,7 @@
         android:id="@+id/profile_button"
         android:title="Profil"
         android:icon="@drawable/ic_profile"
-        app:showAsAction="always"
+        app:showAsAction="ifRoom"
         />
     <item
         android:id="@+id/logout_button"

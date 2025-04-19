@@ -1,5 +1,7 @@
 package com.example.mobile_phone_subscription;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
 import android.app.ActivityOptions;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,6 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Objects;
 
@@ -32,6 +35,7 @@ public class Register extends AppCompatActivity {
     private SharedPreferences preferences;
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
+    private FirebaseFirestore firestore;
     private static final int RC_SIGN_IN = 123;
     EditText newUsernameET;
     EditText passwordET;
@@ -64,6 +68,8 @@ public class Register extends AppCompatActivity {
             mAuth = FirebaseAuth.getInstance();
             mDatabase = FirebaseDatabase.getInstance().getReference();
 
+            firestore = FirebaseFirestore.getInstance();
+
             return insets;
         });
         int secret_key = getIntent().getIntExtra("SECRET_KEY", 0);
@@ -80,13 +86,11 @@ public class Register extends AppCompatActivity {
         String email = emailET.getText().toString().trim();
         String phone = phoneET.getText().toString().trim();
 
-        // Ellenőrizd, hogy a mezők nincsenek-e üresen
         if (newUsername.isEmpty() || password.isEmpty() || passwordAgain.isEmpty() || email.isEmpty() || phone.isEmpty()) {
             Toast.makeText(this, "Kérlek töltsd ki az összes mezőt!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Ellenőrizd, hogy a jelszavak megegyeznek-e
         if (!password.equals(passwordAgain)) {
             Toast.makeText(this, "A jelszavak nem egyeznek!", Toast.LENGTH_SHORT).show();
             return;
@@ -113,8 +117,11 @@ public class Register extends AppCompatActivity {
     }
 
     private void writeNewUser(String userId, String name, String email, String phone) {
-        User user = new User(name, email, phone);
-        mDatabase.child("users").child(userId).setValue(user);
+        User user = new User(name, phone);
+        firestore.collection("users").document(userId)
+                .set(user)
+                .addOnSuccessListener(aVoid -> Log.d(LOG_TAG, "Felhasználó sikeresen mentve!"))
+                .addOnFailureListener(e -> Log.e(LOG_TAG, "Hiba történt a mentés során: ", e));
     }
 
     public void back(View view) {
