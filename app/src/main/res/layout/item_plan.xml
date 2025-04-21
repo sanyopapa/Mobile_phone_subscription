@@ -11,9 +11,10 @@
         android:id="@+id/radioButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/textViewName"
@@ -49,6 +50,21 @@
         app:layout_constraintStart_toEndOf="@id/radioButton"
         app:layout_constraintTop_toBottomOf="@id/textViewDetails" />
 
+    <ImageButton
+        android:id="@+id/buttonDelete"
+        android:layout_width="47dp"
+        android:layout_height="43dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Törlés"
+        android:src="@drawable/ic_delete"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/textViewPrice"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@id/radioButton"
+        app:layout_constraintTop_toBottomOf="@+id/radioButton"
+        app:layout_constraintVertical_bias="1.0"
+        app:tint="@android:color/holo_red_light" />
+
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="100dp"
@@ -60,6 +76,6 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintVertical_bias="0.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

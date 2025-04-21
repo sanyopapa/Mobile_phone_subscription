@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ public class Shopping extends AppCompatActivity {
     private Button buttonPurchase;
     private List<Plan> planList;
     private PlanAdapter planAdapter;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +48,7 @@ public class Shopping extends AppCompatActivity {
 
             user = FirebaseAuth.getInstance().getCurrentUser();
             buttonPurchase = findViewById(R.id.buttonPurchase);
+            firestore = FirebaseFirestore.getInstance();
 
             if (user != null) {
                 Log.d(LOG_TAG, "Authenticated user: " + user.getEmail());
@@ -59,13 +63,11 @@ public class Shopping extends AppCompatActivity {
             recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
 
             planList = new ArrayList<>();
-            planList.add(new Plan("Alap csomag", "10GB adat, 100 perc", 10.0, ""));
-            planList.add(new Plan("Standard csomag", "20GB adat, 200 perc", 20.0, ""));
-            planList.add(new Plan("Prémium csomag", "50GB adat, korlátlan perc", 50.0, ""));
-
             planAdapter = new PlanAdapter(planList, user.isAnonymous());
             recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
             recyclerViewPlans.setAdapter(planAdapter);
+
+            loadPlansFromFirestore();
 
             buttonPurchase.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -134,4 +136,73 @@ public class Shopping extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    private void loadPlansFromFirestore() {
+        firestore.collection("plans")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    planList.clear();
+
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.d(LOG_TAG, "Nincsenek termékek a Firestore-ban");
+                        addDefaultPlansToAdapter(); // Használjunk lokális termékeket, ha nincs Firestore adat
+                    } else {
+                        // Betöltjük a termékeket a Firestore-ból
+                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                            Plan plan = document.toObject(Plan.class);
+                            // Biztosítjuk, hogy az ID be van állítva
+                            plan.setId(document.getId());
+                            Log.d(LOG_TAG, "Plan betöltve ID-val: " + plan.getId());
+                            planList.add(plan);
+                        }
+                        planAdapter.notifyDataSetChanged();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(LOG_TAG, "Error loading plans", e);
+                    Toast.makeText(Shopping.this, "Hiba történt a termékek betöltésekor: "
+                            + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Jogosultsági hibák esetén használjuk a lokális adatokat
+                    addDefaultPlansToAdapter();
+                });
+    }
+    private void addDefaultPlansToFirestore() {
+        List<Plan> defaultPlans = getDefaultPlans();
+
+        for (Plan plan : defaultPlans) {
+            firestore.collection("plans")
+                    .add(plan)
+                    .addOnSuccessListener(documentReference -> {
+                        plan.setId(documentReference.getId());
+                        documentReference.update("id", plan.getId());
+                        planList.add(plan);
+                        planAdapter.notifyDataSetChanged();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(LOG_TAG, "Error adding default plan", e);
+                    });
+        }
+    }
+    // Alapértelmezett termékek hozzáadása az adapterhez (Firestore hiba esetén)
+    private void addDefaultPlansToAdapter() {
+        planList.clear();
+        List<Plan> defaultPlans = getDefaultPlans();
+        // Adjunk hozzá egyedi azonosítókat a lokális adatokhoz
+        for (int i = 0; i < defaultPlans.size(); i++) {
+            Plan plan = defaultPlans.get(i);
+            plan.setId("local_" + i);
+            planList.add(plan);
+        }
+        planAdapter.notifyDataSetChanged();
+    }
+
+    // Alapértelmezett termékek létrehozása
+    private List<Plan> getDefaultPlans() {
+        List<Plan> defaultPlans = new ArrayList<>();
+        defaultPlans.add(new Plan("Alap csomag", "10GB adat, 100 perc", 10.0, ""));
+        defaultPlans.add(new Plan("Standard csomag", "20GB adat, 200 perc", 20.0, ""));
+        defaultPlans.add(new Plan("Prémium csomag", "50GB adat, korlátlan perc", 50.0, ""));
+        return defaultPlans;
+    }
+
 }
