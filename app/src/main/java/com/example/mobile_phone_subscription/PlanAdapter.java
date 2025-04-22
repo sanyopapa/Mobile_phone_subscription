@@ -1,6 +1,7 @@
 // File: app/src/main/java/com/example/mobile_phone_subscription/PlanAdapter.java
     package com.example.mobile_phone_subscription;
 
+    import android.annotation.SuppressLint;
     import android.content.Context;
     import android.util.Log;
     import android.view.LayoutInflater;
@@ -41,12 +42,13 @@
             return new PlanViewHolder(view);
         }
 
+        @SuppressLint("DefaultLocale")
         @Override
         public void onBindViewHolder(@NonNull PlanViewHolder holder, int position) {
             Plan plan = planList.get(position);
             holder.textViewName.setText(plan.getName());
             holder.textViewDetails.setText(plan.getDetails());
-            holder.textViewPrice.setText(String.valueOf(plan.getPrice()));
+            holder.textViewPrice.setText(String.format("%d Ft/hó", plan.getPrice()));
             holder.radioButton.setChecked(position == selectedPosition);
 
             // Handle anonymous users (no selection)

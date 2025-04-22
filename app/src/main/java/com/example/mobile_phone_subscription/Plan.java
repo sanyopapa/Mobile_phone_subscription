@@ -5,14 +5,14 @@ package com.example.mobile_phone_subscription;
 
         private String name;
         private String details;
-        private double price;
+        private int price;
         private String imageUrl;
 
         public Plan() {
             // Default constructor required for Firestore
         }
 
-        public Plan(String name, String details, double price, String imageUrl) {
+        public Plan(String name, String details, int price, String imageUrl) {
             this.name = name;
             this.details = details;
             this.price = price;
@@ -35,7 +35,7 @@ package com.example.mobile_phone_subscription;
             return details;
         }
 
-        public double getPrice() {
+        public int getPrice() {
             return price;
         }
 

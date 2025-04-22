@@ -31,20 +31,23 @@
     <TextView
         android:id="@+id/textViewDetails"
         android:layout_width="210dp"
-        android:layout_height="20dp"
-        android:layout_marginTop="16dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Csomag részletei"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.107"
         app:layout_constraintStart_toEndOf="@id/radioButton"
         app:layout_constraintTop_toBottomOf="@id/textViewName" />
 
+
     <TextView
         android:id="@+id/textViewPrice"
         android:layout_width="210dp"
         android:layout_height="20dp"
         android:layout_marginTop="12dp"
-        android:text="Ár"
+        android:text="Ár(Ft)"
+        android:textAlignment="center"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.107"
         app:layout_constraintStart_toEndOf="@id/radioButton"
@@ -61,9 +64,9 @@
         app:layout_constraintEnd_toStartOf="@+id/textViewPrice"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@id/radioButton"
-        app:layout_constraintTop_toBottomOf="@+id/radioButton"
-        app:layout_constraintVertical_bias="1.0"
-        app:tint="@android:color/holo_red_light" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewDetails"
+        app:layout_constraintVertical_bias="0.0"
+        app:tint="#646464" />
 
     <ImageView
         android:id="@+id/imageView"

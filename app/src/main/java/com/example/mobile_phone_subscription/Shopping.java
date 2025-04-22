@@ -145,12 +145,10 @@ public class Shopping extends AppCompatActivity {
 
                     if (queryDocumentSnapshots.isEmpty()) {
                         Log.d(LOG_TAG, "Nincsenek termékek a Firestore-ban");
-                        addDefaultPlansToAdapter(); // Használjunk lokális termékeket, ha nincs Firestore adat
+                        addDefaultPlansToFirestore();
                     } else {
-                        // Betöltjük a termékeket a Firestore-ból
                         for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                             Plan plan = document.toObject(Plan.class);
-                            // Biztosítjuk, hogy az ID be van állítva
                             plan.setId(document.getId());
                             Log.d(LOG_TAG, "Plan betöltve ID-val: " + plan.getId());
                             planList.add(plan);
@@ -162,7 +160,6 @@ public class Shopping extends AppCompatActivity {
                     Log.e(LOG_TAG, "Error loading plans", e);
                     Toast.makeText(Shopping.this, "Hiba történt a termékek betöltésekor: "
                             + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    // Jogosultsági hibák esetén használjuk a lokális adatokat
                     addDefaultPlansToAdapter();
                 });
     }
@@ -187,7 +184,6 @@ public class Shopping extends AppCompatActivity {
     private void addDefaultPlansToAdapter() {
         planList.clear();
         List<Plan> defaultPlans = getDefaultPlans();
-        // Adjunk hozzá egyedi azonosítókat a lokális adatokhoz
         for (int i = 0; i < defaultPlans.size(); i++) {
             Plan plan = defaultPlans.get(i);
             plan.setId("local_" + i);
@@ -199,9 +195,14 @@ public class Shopping extends AppCompatActivity {
     // Alapértelmezett termékek létrehozása
     private List<Plan> getDefaultPlans() {
         List<Plan> defaultPlans = new ArrayList<>();
-        defaultPlans.add(new Plan("Alap csomag", "10GB adat, 100 perc", 10.0, ""));
-        defaultPlans.add(new Plan("Standard csomag", "20GB adat, 200 perc", 20.0, ""));
-        defaultPlans.add(new Plan("Prémium csomag", "50GB adat, korlátlan perc", 50.0, ""));
+        defaultPlans.add(new Plan("Alap internet+telefon csomag", "10GB adat, 100 perc telefonbeszélgetés", 4500, ""));
+        defaultPlans.add(new Plan("Standard internet+telefon csomag", "20GB adat, 200 perc telefonbeszélgetés", 7000, ""));
+        defaultPlans.add(new Plan("Prémium internet+telefon csomag", "50GB adat, korlátlan telefonbeszélgetés", 9000, ""));
+        defaultPlans.add(new Plan("Korlátlan internet+telefon csomag", "Korlátlan adat, korlátlan telefonbeszélgetés", 11000, ""));
+        defaultPlans.add(new Plan("Csak telefon alap csomag", "60 perc telefonbeszélgetés", 2000, ""));
+        defaultPlans.add(new Plan("Csak telefon standard csomag", "10 óra telefonbeszélgetés", 4000, ""));
+        defaultPlans.add(new Plan("Csak telefon prémium csomag", "40 óra telefonbeszélgetés", 5000, ""));
+        defaultPlans.add(new Plan("Csak telefon korlátlan csomag", "korlátlan telefonbeszélgetés", 6500, ""));
         return defaultPlans;
     }
 
