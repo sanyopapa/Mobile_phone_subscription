@@ -89,15 +89,14 @@ public class Shopping extends AppCompatActivity {
 
     public void Logout(View view) {
         FirebaseAuth.getInstance().signOut();
-        Intent intent = new Intent(this, MainActivity.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
-        startActivity(intent, options.toBundle());
+        openLoginPage(view);
         finish();
     }
 
     public void openLoginPage(View view) {
         Intent intent = new Intent(this, MainActivity.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
+        ActivityOptions options = ActivityOptions.makeCustomAnimation(
+                this, R.anim.fade_in, R.anim.fade_out);
         startActivity(intent, options.toBundle());
     }
 
