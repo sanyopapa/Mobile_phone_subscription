@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -31,8 +32,10 @@ import java.util.List;
 public class Shopping extends AppCompatActivity {
     private static final String LOG_TAG = Shopping.class.getName();
     private FirebaseUser user;
+    private boolean isAdmin = false;
     private RecyclerView recyclerViewPlans;
     private Button buttonPurchase;
+    private Button buttonAddNewPlan;
     private List<Plan> planList;
     private PlanAdapter planAdapter;
     private FirebaseFirestore firestore;
@@ -42,50 +45,46 @@ public class Shopping extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_shopping);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-            user = FirebaseAuth.getInstance().getCurrentUser();
-            buttonPurchase = findViewById(R.id.buttonPurchase);
-            firestore = FirebaseFirestore.getInstance();
+        // Toolbar inicializálása
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-            if (user != null) {
-                Log.d(LOG_TAG, "Authenticated user: " + user.getEmail());
-                if (user.isAnonymous()) {
-                    buttonPurchase.setVisibility(View.GONE);
-                }
-            } else {
-                Log.d(LOG_TAG, "Unauthenticated user");
-                finish();
-            }
+        View linearLayout = findViewById(R.id.main);
 
-            recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
-
-            planList = new ArrayList<>();
-            planAdapter = new PlanAdapter(planList, user.isAnonymous());
-            recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
-            recyclerViewPlans.setAdapter(planAdapter);
-
-            loadPlansFromFirestore();
-
-            buttonPurchase.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Plan selectedPlan = planAdapter.getSelectedPlan();
-                    if (selectedPlan != null) {
-                        Toast.makeText(Shopping.this, "Megvásárolva: " + selectedPlan.getName(), Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(Shopping.this, "Nincs kiválasztott csomag", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
-
+        ViewCompat.setOnApplyWindowInsetsListener(linearLayout, (v, insets) -> {
+            Insets systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            layoutParams.topMargin = systemBarsInsets.top;
+            v.setLayoutParams(layoutParams);
             return insets;
         });
+
+        // Nézetek inicializálása
+        recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
+        buttonPurchase = findViewById(R.id.buttonPurchase);
+        buttonAddNewPlan = findViewById(R.id.buttonAddNewPlan);
+
+        // Firebase inicializálása
+        firestore = FirebaseFirestore.getInstance();
+        user = FirebaseAuth.getInstance().getCurrentUser();
+
+        // Események kezelése
+        buttonPurchase.setOnClickListener(view -> purchaseSelectedPlan());
+        buttonAddNewPlan.setOnClickListener(view -> openPlanEditor());
+
+        // Alapértelmezett állapot beállítása
+        planList = new ArrayList<>();
+        boolean isAnonymous = (user == null || user.isAnonymous());
+        planAdapter = new PlanAdapter(planList, isAnonymous, isAdmin);
+        recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewPlans.setAdapter(planAdapter);
+
+        // Admin státusz ellenőrzése
+        checkUserStatus();
+
+        // Adatok betöltése
+        loadPlansFromFirestore();
     }
 
     public void Logout(View view) {
@@ -135,6 +134,43 @@ public class Shopping extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void checkUserStatus() {
+        if (user != null && !user.isAnonymous()) {
+            // Admin jogosultság ellenőrzése
+            FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            User userProfile = documentSnapshot.toObject(User.class);
+                            if (userProfile != null) {
+                                isAdmin = userProfile.admin;
+                            }
+                        }
+                        updateUIForUserRole();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(LOG_TAG, "Hiba a felhasználói adatok lekérésekor", e);
+                        updateUIForUserRole();
+                    });
+        } else {
+            isAdmin = false;
+            updateUIForUserRole();
+        }
+    }
+
+    private void updateUIForUserRole() {
+        // "Új csomag hozzáadása" gomb csak adminoknak
+        buttonAddNewPlan.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+
+        // "Vásárlás" gomb csak nem-admin, bejelentkezett felhasználóknak
+        boolean isAnonymous = (user == null || user.isAnonymous());
+        buttonPurchase.setVisibility(!isAdmin && !isAnonymous ? View.VISIBLE : View.GONE);
+
+        // Adapter frissítése a jogosultságok alapján
+        planAdapter = new PlanAdapter(planList, isAnonymous, isAdmin);
+        recyclerViewPlans.setAdapter(planAdapter);
     }
 
     private void loadPlansFromFirestore() {
@@ -206,4 +242,53 @@ public class Shopping extends AppCompatActivity {
         return defaultPlans;
     }
 
+    private void checkAdminStatus() {
+        if (user != null && !user.isAnonymous()) {
+            firestore.collection("users").document(user.getUid())
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            User userProfile = documentSnapshot.toObject(User.class);
+                            if (userProfile != null) {
+                                isAdmin = userProfile.admin;
+                                setupRecyclerView();
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(LOG_TAG, "Admin státusz lekérési hiba", e);
+                        setupRecyclerView();
+                    });
+        } else {
+            setupRecyclerView();
+        }
+    }
+
+    private void setupRecyclerView() {
+        recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
+        planList = new ArrayList<>();
+        planAdapter = new PlanAdapter(planList, user.isAnonymous(), isAdmin);
+        recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewPlans.setAdapter(planAdapter);
+        loadPlansFromFirestore();
+    }
+    private void openPlanEditor() {
+        Intent intent = new Intent(this, PlanEditActivity.class);
+        intent.putExtra("IS_NEW_PLAN", true);
+        startActivity(intent);
+    }
+    private void purchaseSelectedPlan() {
+        Plan selectedPlan = planAdapter.getSelectedPlan();
+        if (selectedPlan != null) {
+            Intent intent = new Intent(this, PlanInfoActivity.class);
+            intent.putExtra("PLAN_ID", selectedPlan.getId());
+            intent.putExtra("PLAN_NAME", selectedPlan.getName());
+            intent.putExtra("PLAN_DETAILS", selectedPlan.getDetails());
+            intent.putExtra("PLAN_PRICE", selectedPlan.getPrice());
+            intent.putExtra("PLAN_DESCRIPTION", selectedPlan.getDescription());
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Kérlek válassz ki egy csomagot előbb!", Toast.LENGTH_SHORT).show();
+        }
+    }
 }

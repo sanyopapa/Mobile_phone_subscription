@@ -21,6 +21,14 @@
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
                 app:layout_constraintTop_toTopOf="parent" />
 
+            <Button
+                android:id="@+id/buttonAddNewPlan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Új csomag hozzáadása"
+                android:layout_marginTop="10dp"
+                android:visibility="gone" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewPlans"
                 android:layout_width="match_parent"
@@ -31,8 +39,8 @@
                 android:id="@+id/buttonPurchase"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Vásárlás"
-                android:layout_marginTop="20dp" />
+                android:layout_marginTop="20dp"
+                android:text="Vásárlás most" />
 
         </LinearLayout>
 </ScrollView>

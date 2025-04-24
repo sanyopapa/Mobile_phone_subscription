@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -36,6 +37,7 @@ public class Register extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
     private FirebaseFirestore firestore;
+    private CheckBox checkBoxAdmin;
     private static final int RC_SIGN_IN = 123;
     EditText newUsernameET;
     EditText passwordET;
@@ -57,6 +59,7 @@ public class Register extends AppCompatActivity {
             passwordAgainET = findViewById(R.id.editTextPasswordAgain);
             emailET = findViewById(R.id.editTextTextEmailAddress);
             phoneET = findViewById(R.id.editTextPhone);
+            checkBoxAdmin = findViewById(R.id.checkBoxAdmin);
 
             preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
             String username = preferences.getString("username", "");
@@ -117,7 +120,8 @@ public class Register extends AppCompatActivity {
     }
 
     private void writeNewUser(String userId, String name, String email, String phone) {
-        User user = new User(name, phone);
+        boolean isAdmin = checkBoxAdmin.isChecked();
+        User user = new User(name, phone, isAdmin);
         firestore.collection("users").document(userId)
                 .set(user)
                 .addOnSuccessListener(aVoid -> Log.d(LOG_TAG, "Felhasználó sikeresen mentve!"))

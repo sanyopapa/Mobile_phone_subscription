@@ -3,6 +3,7 @@
 
     import android.annotation.SuppressLint;
     import android.content.Context;
+    import android.content.Intent;
     import android.util.Log;
     import android.view.LayoutInflater;
     import android.view.View;
@@ -24,13 +25,15 @@
         private List<Plan> planList;
         private int selectedPosition = -1;
         private boolean isAnonymous;
+        private boolean isAdmin;
         private FirebaseFirestore firestore;
         private Context context;
 
 
-        public PlanAdapter(List<Plan> planList, boolean isAnonymous) {
+        public PlanAdapter(List<Plan> planList, boolean isAnonymous, boolean isAdmin) {
             this.planList = planList;
             this.isAnonymous = isAnonymous;
+            this.isAdmin = isAdmin;
             this.firestore = FirebaseFirestore.getInstance();
         }
 
@@ -51,7 +54,25 @@
             holder.textViewPrice.setText(String.format("%d Ft/hó", plan.getPrice()));
             holder.radioButton.setChecked(position == selectedPosition);
 
-            // Handle anonymous users (no selection)
+            // Egész elem kattintási eseménykezelése
+            holder.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, PlanInfoActivity.class);
+                intent.putExtra("PLAN_ID", plan.getId());
+                intent.putExtra("PLAN_NAME", plan.getName());
+                intent.putExtra("PLAN_DETAILS", plan.getDetails());
+                intent.putExtra("PLAN_PRICE", plan.getPrice());
+                intent.putExtra("PLAN_DESCRIPTION", plan.getDescription());
+                context.startActivity(intent);
+            });
+
+            if (isAdmin) {
+                holder.buttonDelete.setVisibility(View.VISIBLE);
+                holder.buttonEdit.setVisibility(View.VISIBLE);
+            } else {
+                holder.buttonDelete.setVisibility(View.GONE);
+                holder.buttonEdit.setVisibility(View.GONE);
+            }
+
             if (isAnonymous) {
                 holder.radioButton.setVisibility(View.GONE);
             } else {
@@ -62,9 +83,14 @@
                 });
             }
 
-            // Delete button functionality
+            // Törlés gomb
             holder.buttonDelete.setOnClickListener(v -> {
                 deletePlan(plan, position);
+            });
+
+            // Szerkesztés gomb
+            holder.buttonEdit.setOnClickListener(v -> {
+                editPlan(plan);
             });
         }
 
@@ -114,6 +140,16 @@
                 });
         }
 
+        private void editPlan(Plan plan) {
+            Intent intent = new Intent(context, PlanEditActivity.class);
+            intent.putExtra("PLAN_ID", plan.getId());
+            intent.putExtra("PLAN_NAME", plan.getName());
+            intent.putExtra("PLAN_DETAILS", plan.getDetails());
+            intent.putExtra("PLAN_PRICE", plan.getPrice());
+            intent.putExtra("PLAN_IMAGE_URL", plan.getImageUrl());
+            context.startActivity(intent);
+        }
+
         private android.content.Context getContext() {
             return context;
         }
@@ -125,6 +161,7 @@
             TextView textViewPrice;
             RadioButton radioButton;
             ImageButton buttonDelete;
+            ImageButton buttonEdit;
 
             public PlanViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -133,6 +170,7 @@
                 textViewPrice = itemView.findViewById(R.id.textViewPrice);
                 radioButton = itemView.findViewById(R.id.radioButton);
                 buttonDelete = itemView.findViewById(R.id.buttonDelete);
+                buttonEdit = itemView.findViewById(R.id.buttonEdit);
             }
         }
     }

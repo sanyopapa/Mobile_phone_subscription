@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".PlanEditActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Csomag szerkesztése"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText
+        android:id="@+id/editTextPlanName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Csomag neve"
+        android:inputType="text"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/editTextPlanDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Csomag részletei"
+        android:inputType="textMultiLine"
+        android:minLines="3"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/editTextPlanPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ár (Ft)"
+        android:inputType="number"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText
+        android:id="@+id/editTextPlanDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Csomag leírása"
+        android:inputType="textMultiLine"
+        android:minLines="5"
+        android:gravity="top|start"
+        android:layout_marginBottom="20dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/buttonCancelEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mégsem"
+            android:layout_marginEnd="10dp"/>
+
+        <Button
+            android:id="@+id/buttonSavePlan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mentés"/>
+    </LinearLayout>
+</LinearLayout>
