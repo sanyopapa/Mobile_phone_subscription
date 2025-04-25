@@ -39,11 +39,7 @@ public class Register extends AppCompatActivity {
     private FirebaseFirestore firestore;
     private CheckBox checkBoxAdmin;
     private static final int RC_SIGN_IN = 123;
-    EditText newUsernameET;
-    EditText passwordET;
-    EditText passwordAgainET;
-    EditText emailET;
-    EditText phoneET;
+    EditText newUsernameET, passwordET, passwordAgainET, emailET, phoneET;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,12 +50,7 @@ public class Register extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-            newUsernameET = findViewById(R.id.editTextNewUsername);
-            passwordET = findViewById(R.id.editTextPassword);
-            passwordAgainET = findViewById(R.id.editTextPasswordAgain);
-            emailET = findViewById(R.id.editTextTextEmailAddress);
-            phoneET = findViewById(R.id.editTextPhone);
-            checkBoxAdmin = findViewById(R.id.checkBoxAdmin);
+            initializeViews();
 
             preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
             String username = preferences.getString("username", "");
@@ -138,5 +129,17 @@ public class Register extends AppCompatActivity {
         Intent intent = new Intent(Register.this, Shopping.class);
         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Register.this);
         startActivity(intent, options.toBundle());
-    }    
+    }
+
+    /**
+     * Inicializálja az oldalon lévő elemeket
+     */
+    private void initializeViews() {
+        newUsernameET = findViewById(R.id.editTextNewUsername);
+        passwordET = findViewById(R.id.editTextPassword);
+        passwordAgainET = findViewById(R.id.editTextPasswordAgain);
+        emailET = findViewById(R.id.editTextTextEmailAddress);
+        phoneET = findViewById(R.id.editTextPhone);
+        checkBoxAdmin = findViewById(R.id.checkBoxAdmin);
+    }
 }

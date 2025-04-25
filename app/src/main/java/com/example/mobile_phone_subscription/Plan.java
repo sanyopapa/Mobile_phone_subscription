@@ -1,13 +1,8 @@
 package com.example.mobile_phone_subscription;
 
     public class Plan {
-        private String id;
-        private String name;
-        private String details;
+        private String id, description, imageUrl, details, name;
         private int price;
-        private String imageUrl;
-        private String description;
-
         public Plan() {
             // Default constructor required for Firestore
         }

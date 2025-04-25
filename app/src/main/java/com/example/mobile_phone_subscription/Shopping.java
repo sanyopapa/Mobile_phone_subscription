@@ -1,7 +1,13 @@
 package com.example.mobile_phone_subscription;
 
 import android.app.ActivityOptions;
+import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -10,17 +16,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
+import android.Manifest;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -34,8 +46,7 @@ public class Shopping extends AppCompatActivity {
     private FirebaseUser user;
     private boolean isAdmin = false;
     private RecyclerView recyclerViewPlans;
-    private Button buttonPurchase;
-    private Button buttonAddNewPlan;
+    private Button buttonPurchase, buttonAddNewPlan;
     private List<Plan> planList;
     private PlanAdapter planAdapter;
     private FirebaseFirestore firestore;
@@ -60,10 +71,7 @@ public class Shopping extends AppCompatActivity {
             return insets;
         });
 
-        // Nézetek inicializálása
-        recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
-        buttonPurchase = findViewById(R.id.buttonPurchase);
-        buttonAddNewPlan = findViewById(R.id.buttonAddNewPlan);
+        initializeViews();
 
         // Firebase inicializálása
         firestore = FirebaseFirestore.getInstance();
@@ -73,12 +81,7 @@ public class Shopping extends AppCompatActivity {
         buttonPurchase.setOnClickListener(view -> purchaseSelectedPlan());
         buttonAddNewPlan.setOnClickListener(view -> openPlanEditor());
 
-        // Alapértelmezett állapot beállítása
-        planList = new ArrayList<>();
-        boolean isAnonymous = (user == null || user.isAnonymous());
-        planAdapter = new PlanAdapter(planList, isAnonymous, isAdmin);
-        recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewPlans.setAdapter(planAdapter);
+        setupRecyclerView();
 
         // Admin státusz ellenőrzése
         checkUserStatus();
@@ -86,26 +89,47 @@ public class Shopping extends AppCompatActivity {
         // Adatok betöltése
         loadPlansFromFirestore();
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && user != null) {
+            if (currentUser.getUid().equals(user.getUid())) {
+                // Ugyanaz a felhasználó, csak frissítjük az adatokat
+                loadPlansFromFirestore();
+            } else {
+                // Más felhasználó jelentkezett be, frissítsük a teljes állapotot
+                user = currentUser;
+                checkUserStatus();
+            }
+        } else if (currentUser == null && user != null) {
+            // Kijelentkezés történt, frissítsük az állapotot
+            user = null;
+            isAdmin = false;
+            updateUIForUserRole();
+            loadPlansFromFirestore();
+        } else {
+            loadPlansFromFirestore();
+        }
+        invalidateOptionsMenu();
+    }
     public void Logout(View view) {
         FirebaseAuth.getInstance().signOut();
         openLoginPage(view);
         finish();
     }
-
     public void openLoginPage(View view) {
         Intent intent = new Intent(this, MainActivity.class);
         ActivityOptions options = ActivityOptions.makeCustomAnimation(
                 this, R.anim.fade_in, R.anim.fade_out);
         startActivity(intent, options.toBundle());
     }
-
     public void openProfilePage(View view) {
         Intent intent = new Intent(this, Profile.class);
         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Shopping.this);
         startActivity(intent, options.toBundle());
     }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.shop_list_menu, menu);
@@ -118,7 +142,6 @@ public class Shopping extends AppCompatActivity {
         }
         return true;
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -134,7 +157,6 @@ public class Shopping extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
     private void checkUserStatus() {
         if (user != null && !user.isAnonymous()) {
             // Admin jogosultság ellenőrzése
@@ -158,7 +180,6 @@ public class Shopping extends AppCompatActivity {
             updateUIForUserRole();
         }
     }
-
     private void updateUIForUserRole() {
         // "Új csomag hozzáadása" gomb csak adminoknak
         buttonAddNewPlan.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
@@ -171,7 +192,6 @@ public class Shopping extends AppCompatActivity {
         planAdapter = new PlanAdapter(planList, isAnonymous, isAdmin);
         recyclerViewPlans.setAdapter(planAdapter);
     }
-
     private void loadPlansFromFirestore() {
         firestore.collection("plans")
                 .get()
@@ -240,29 +260,6 @@ public class Shopping extends AppCompatActivity {
         defaultPlans.add(new Plan("Csak telefon korlátlan csomag", "korlátlan telefonbeszélgetés", 6500, ""));
         return defaultPlans;
     }
-
-    private void checkAdminStatus() {
-        if (user != null && !user.isAnonymous()) {
-            firestore.collection("users").document(user.getUid())
-                    .get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            User userProfile = documentSnapshot.toObject(User.class);
-                            if (userProfile != null) {
-                                isAdmin = userProfile.admin;
-                                setupRecyclerView();
-                            }
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(LOG_TAG, "Admin státusz lekérési hiba", e);
-                        setupRecyclerView();
-                    });
-        } else {
-            setupRecyclerView();
-        }
-    }
-
     private void setupRecyclerView() {
         recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
         planList = new ArrayList<>();
@@ -276,6 +273,19 @@ public class Shopping extends AppCompatActivity {
         intent.putExtra("IS_NEW_PLAN", true);
         startActivity(intent);
     }
+
+    /**
+     * Inicializálja az oldalon lévő elemeket
+     */
+    private void initializeViews(){
+        recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
+        buttonPurchase = findViewById(R.id.buttonPurchase);
+        buttonAddNewPlan = findViewById(R.id.buttonAddNewPlan);
+    }
+
+    /**
+     * A vásárlás logikáját megvalósító metódus
+     */
     private void purchaseSelectedPlan() {
         Plan selectedPlan = planAdapter.getSelectedPlan();
         if (selectedPlan != null) {

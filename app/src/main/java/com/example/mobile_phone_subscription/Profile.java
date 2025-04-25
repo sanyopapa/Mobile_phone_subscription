@@ -46,6 +46,41 @@ public class Profile extends AppCompatActivity {
         buttonReset.setOnClickListener(v -> loadUserData());
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        // Ha a felhasználó kijelentkezett, irányítsuk át a bejelentkező oldalra
+        if (currentUser == null) {
+            Intent intent = new Intent(this, MainActivity.class);
+            ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
+            startActivity(intent, options.toBundle());
+            finish();
+            return;
+        }
+
+        // Ha a felhasználói azonosító megváltozott, irányítsuk át a bejelentkező oldalra
+        if (user != null && !user.getUid().equals(currentUser.getUid())) {
+            Intent intent = new Intent(this, MainActivity.class);
+            ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
+            startActivity(intent, options.toBundle());
+            finish();
+            return;
+        }
+
+        // Frissítsük a felhasználói adatokat, hogy mindig a legfrissebb adatokat mutassuk
+        user = currentUser;
+        loadUserData();
+
+        // Frissítsük a menüt a felhasználói jogosultságok alapján
+        invalidateOptionsMenu();
+    }
+
+    /**
+     * Inicializálja az oldalon lévő elemeket
+     */
     private void initializeViews() {
         editTextName = findViewById(R.id.editTextName);
         TextEmail = findViewById(R.id.textViewEmail);

@@ -1,5 +1,8 @@
 package com.example.mobile_phone_subscription;
 
+/**
+ * A felhasználó profiljához kapcsolódó adatok tárolására szolgáló osztály
+ */
 public class User {
     public String name;
     public String phone;
