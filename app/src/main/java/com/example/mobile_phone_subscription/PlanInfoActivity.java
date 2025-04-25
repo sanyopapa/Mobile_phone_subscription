@@ -84,13 +84,13 @@ public class PlanInfoActivity extends AppCompatActivity {
         }
     }
 
-   private void purchase() {
+private void purchase() {
+    DialogHelper.showPurchaseConfirmationDialog(this, planName, () -> {
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (user != null && !user.isAnonymous()) {
             int price = getIntent().getIntExtra("PLAN_PRICE", 0);
 
-            // Store all subscription details
             FirebaseFirestore.getInstance().collection("users").document(user.getUid())
                 .update(
                     "subscriptionId", planId,
@@ -102,11 +102,9 @@ public class PlanInfoActivity extends AppCompatActivity {
                             "Sikeresen megvásároltad: " + planName,
                             Toast.LENGTH_SHORT).show();
 
-                    // Értesítési jogosultság ellenőrzése
                     if (NotificationHelper.hasNotificationPermission(this)) {
                         NotificationHelper.sendPurchaseNotification(this, planName);
 
-                        // Exact alarm jogosultság ellenőrzése
                         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                                 alarmManager.canScheduleExactAlarms()) {
@@ -133,7 +131,8 @@ public class PlanInfoActivity extends AppCompatActivity {
                     "Kérlek jelentkezz be a vásárláshoz!",
                     Toast.LENGTH_SHORT).show();
         }
-    }
+    });
+}
 
     private void goToShopping() {
         Intent intent = new Intent(this, Shopping.class);

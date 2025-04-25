@@ -3,23 +3,22 @@ package com.example.mobile_phone_subscription;
 import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.core.app.ActivityCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,7 +35,6 @@ public class Profile extends AppCompatActivity {
     private TextView textViewSubscriptionName, textViewSubscriptionDetails, textViewSubscriptionPrice, textViewNoSubscription;
     private Button buttonCancelSubscription;
     private String subscriptionId;
-    private View linearLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,21 +149,25 @@ public class Profile extends AppCompatActivity {
         String password = editTextPassword.getText().toString();
         String passwordAgain = editTextPasswordAgain.getText().toString();
 
-        if (user != null) {
-            if (!password.isEmpty() && password.equals(passwordAgain)) {
-                user.updatePassword(password)
-                    .addOnSuccessListener(aVoid -> showToast("Jelszó sikeresen frissítve!"))
-                    .addOnFailureListener(e -> showToast("Hiba történt a jelszó frissítése során!"));
-            } else if (!password.isEmpty()) {
-                showToast("A jelszavak nem egyeznek!");
-                return;
-            }
-
-            firestore.collection("users").document(user.getUid())
-                .update("name", name, "phone", phone)
-                .addOnSuccessListener(aVoid -> showToast("Adatok sikeresen mentve!"))
-                .addOnFailureListener(e -> showToast("Hiba történt az adatok mentése során!"));
+        if (!password.isEmpty() && !password.equals(passwordAgain)) {
+            showToast("A jelszavak nem egyeznek!");
+            return;
         }
+
+        DialogHelper.showSaveProfileDialog(this, () -> {
+            if (user != null) {
+                if (!password.isEmpty()) {
+                    user.updatePassword(password)
+                            .addOnSuccessListener(aVoid -> showToast("Jelszó sikeresen frissítve!"))
+                            .addOnFailureListener(e -> showToast("Hiba történt a jelszó frissítése során!"));
+                }
+
+                firestore.collection("users").document(user.getUid())
+                        .update("name", name, "phone", phone)
+                        .addOnSuccessListener(aVoid -> showToast("Adatok sikeresen mentve!"))
+                        .addOnFailureListener(e -> showToast("Hiba történt az adatok mentése során!"));
+            }
+        });
     }
 
     private void showToast(String message) {
@@ -240,16 +242,62 @@ public class Profile extends AppCompatActivity {
 
     // Add method to cancel subscription
     private void cancelSubscription() {
-        if (user != null && subscriptionId != null) {
-            firestore.collection("users").document(user.getUid())
-                    .update("subscriptionId", null)
-                    .addOnSuccessListener(aVoid -> {
-                        showToast("Előfizetés sikeresen lemondva!");
-                        subscriptionContainer.setVisibility(View.GONE);
-                        textViewNoSubscription.setVisibility(View.VISIBLE);
-                        subscriptionId = null;
-                    })
-                    .addOnFailureListener(e -> showToast("Hiba történt az előfizetés lemondásakor!"));
-        }
+        DialogHelper.showCancelSubscriptionDialog(this, () -> {
+            if (user != null && subscriptionId != null) {
+                // Előfizetés nevének lekérése az értesítéshez
+                firestore.collection("plans").document(subscriptionId)
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            String planName;
+                            if (documentSnapshot.exists()) {
+                                Plan plan = documentSnapshot.toObject(Plan.class);
+                                if (plan != null) {
+                                    planName = plan.getName();
+                                } else {
+                                    planName = "";
+                                }
+                            } else {
+                                planName = "";
+                            }
+
+                            // Lemondás végrehajtása
+                            firestore.collection("users").document(user.getUid())
+                                    .update("subscriptionId", null)
+                                    .addOnSuccessListener(aVoid -> {
+                                        showToast("Előfizetés sikeresen lemondva!");
+                                        subscriptionContainer.setVisibility(View.GONE);
+                                        textViewNoSubscription.setVisibility(View.VISIBLE);
+                                        subscriptionId = null;
+
+                                        // Értesítési jogosultság ellenőrzése és értesítés küldése
+                                        if (NotificationHelper.hasNotificationPermission(this)) {
+                                            NotificationHelper.sendCancellationNotification(this, planName);
+                                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            ActivityCompat.requestPermissions(this,
+                                                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                                    100);
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> showToast("Hiba történt az előfizetés lemondásakor!"));
+                        })
+                        .addOnFailureListener(e -> {
+                            // Ha nem sikerült lekérni a tervet, akkor csak egyszerűen töröljük
+                            firestore.collection("users").document(user.getUid())
+                                    .update("subscriptionId", null)
+                                    .addOnSuccessListener(aVoid -> {
+                                        showToast("Előfizetés sikeresen lemondva!");
+                                        subscriptionContainer.setVisibility(View.GONE);
+                                        textViewNoSubscription.setVisibility(View.VISIBLE);
+                                        subscriptionId = null;
+
+                                        // Értesítési küldése terv név nélkül
+                                        if (NotificationHelper.hasNotificationPermission(Profile.this)) {
+                                            NotificationHelper.sendCancellationNotification(Profile.this, "");
+                                        }
+                                    })
+                                    .addOnFailureListener(err -> showToast("Hiba történt az előfizetés lemondásakor!"));
+                        });
+            }
+        });
     }
 }

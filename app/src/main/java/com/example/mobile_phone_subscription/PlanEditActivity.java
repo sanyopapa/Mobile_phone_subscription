@@ -120,48 +120,46 @@ public class PlanEditActivity extends AppCompatActivity {
             return;
         }
 
-        // Csomag objektum létrehozása
-        Plan plan = new Plan(name, details, price, "");
-        plan.setDescription(description);
+        DialogHelper.showSavePlanDialog(this, () -> {
+            // Csomag objektum létrehozása
+            Plan plan = new Plan(name, details, price, "");
+            plan.setDescription(description);
 
-        // Mentés a Firestore-ba
-        if (planId != null && !isNewPlan) {
-            // Meglévő csomag frissítése
-            Log.d(LOG_TAG, "Csomag frissítése: " + planId);
-
-            firestore.collection("plans").document(planId)
-                    .update(
-                            "name", name,
-                            "details", details,
-                            "price", price,
-                            "description", description
-                    )
-                    .addOnSuccessListener(aVoid -> {
-                        Log.d(LOG_TAG, "Csomag sikeresen frissítve!");
-                        Toast.makeText(PlanEditActivity.this, "Csomag sikeresen frissítve!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(LOG_TAG, "Hiba a csomag frissítésekor", e);
-                        Toast.makeText(PlanEditActivity.this, "Hiba történt: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        } else {
-            // Új csomag hozzáadása
-            Log.d(LOG_TAG, "Új csomag hozzáadása");
-
-            firestore.collection("plans")
-                    .add(plan)
-                    .addOnSuccessListener(documentReference -> {
-                        String id = documentReference.getId();
-                        documentReference.update("id", id);
-                        Log.d(LOG_TAG, "Csomag sikeresen hozzáadva ID-val: " + id);
-                        Toast.makeText(PlanEditActivity.this, "Csomag sikeresen hozzáadva!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(LOG_TAG, "Hiba a csomag hozzáadásakor", e);
-                        Toast.makeText(PlanEditActivity.this, "Hiba történt: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        }
+            // Mentés a Firestore-ba
+            if (planId != null && !isNewPlan) {
+                // Meglévő csomag frissítése
+                firestore.collection("plans").document(planId)
+                        .update(
+                                "name", name,
+                                "details", details,
+                                "price", price,
+                                "description", description
+                        )
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(LOG_TAG, "Csomag sikeresen frissítve!");
+                            Toast.makeText(PlanEditActivity.this, "Csomag sikeresen frissítve!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(LOG_TAG, "Hiba a csomag frissítésekor", e);
+                            Toast.makeText(PlanEditActivity.this, "Hiba történt: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                // Új csomag hozzáadása
+                firestore.collection("plans")
+                        .add(plan)
+                        .addOnSuccessListener(documentReference -> {
+                            String id = documentReference.getId();
+                            documentReference.update("id", id);
+                            Log.d(LOG_TAG, "Csomag sikeresen hozzáadva ID-val: " + id);
+                            Toast.makeText(PlanEditActivity.this, "Csomag sikeresen hozzáadva!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(LOG_TAG, "Hiba a csomag hozzáadásakor", e);
+                            Toast.makeText(PlanEditActivity.this, "Hiba történt: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+            }
+        });
     }
 }

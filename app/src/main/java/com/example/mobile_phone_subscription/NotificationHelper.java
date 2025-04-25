@@ -15,10 +15,13 @@ import androidx.core.content.ContextCompat;
 public class NotificationHelper {
     private static final String PURCHASE_CHANNEL_ID = "purchase_channel";
     private static final String REMINDER_CHANNEL_ID = "reminder_channel";
+    private static final String CANCEL_CHANNEL_ID = "cancel_channel";
+
 
     // Notification IDs
     public static final int PURCHASE_NOTIFICATION_ID = 1;
     public static final int REMINDER_NOTIFICATION_ID = 2;
+    public static final int CANCEL_NOTIFICATION_ID = 3;
 
     // Notification csatornák létrehozása
     public static void createNotificationChannels(Context context) {
@@ -38,8 +41,16 @@ public class NotificationHelper {
                     "Emlékeztető értesítések",
                     NotificationManager.IMPORTANCE_HIGH);
 
+            // Lemondási csatorna
+            NotificationChannel cancelChannel = new NotificationChannel(
+                    CANCEL_CHANNEL_ID,
+                    "Lemondási értesítések",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+
+
             notificationManager.createNotificationChannel(purchaseChannel);
             notificationManager.createNotificationChannel(reminderChannel);
+            notificationManager.createNotificationChannel(cancelChannel);
         }
     }
 
@@ -93,6 +104,35 @@ public class NotificationHelper {
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(REMINDER_NOTIFICATION_ID, builder.build());
+    }
+
+    /**
+     * Értesítés küldése előfizetés lemondásakor
+     */
+    public static void sendCancellationNotification(Context context, String planName) {
+        // Intent létrehozása a Shopping aktivitáshoz
+        Intent intent = new Intent(context, Shopping.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        // PendingIntent létrehozása
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                CANCEL_NOTIFICATION_ID,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CANCEL_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_shop)
+                .setContentTitle("Előfizetés lemondva")
+                .setContentText("Sajnáljuk, hogy lemondtad az előfizetésed. \nReméljük, hogy hamarosan előfizetsz egy újra :)")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManager notificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.notify(CANCEL_NOTIFICATION_ID, builder.build());
     }
 
     // Értesítési engedély ellenőrzése (Android 13+)
