@@ -12,6 +12,9 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
                     Log.d(LOG_TAG, "signInWithEmail:success");
+                    saveCredentialsForBiometric(input, password);
                     Intent intent = new Intent(MainActivity.this, Shopping.class);
                     ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
                     startActivity(intent, options.toBundle());
@@ -148,5 +152,85 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    private void showBiometricPrompt() {
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Biometrikus bejelentkezés")
+                .setSubtitle("Jelentkezz be ujjlenyomattal vagy arcfelismeréssel")
+                .setNegativeButtonText("Mégsem")
+                .build();
+
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this,
+                ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                        super.onAuthenticationSucceeded(result);
+                        // Sikeres azonosítás után bejelentkeztetjük a felhasználót
+                        signInWithSavedCredentials();
+                    }
+
+                    @Override
+                    public void onAuthenticationFailed() {
+                        super.onAuthenticationFailed();
+                        Toast.makeText(MainActivity.this, "Sikertelen biometrikus azonosítás",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAuthenticationError(int errorCode, CharSequence errString) {
+                        super.onAuthenticationError(errorCode, errString);
+                        Toast.makeText(MainActivity.this, "Hiba: " + errString,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
+    private void signInWithSavedCredentials() {
+        // Tárolt bejelentkezési adatok lekérése biztonságos tárolóból
+        SharedPreferences securePrefs = getSharedPreferences("secure_prefs", MODE_PRIVATE);
+        String email = securePrefs.getString("email", "");
+        String password = securePrefs.getString("password", "");
+
+        if (!email.isEmpty() && !password.isEmpty()) {
+            mAuth.signInWithEmailAndPassword(email, password)
+                    .addOnSuccessListener(authResult -> {
+                        Log.d(LOG_TAG, "Sikeres biometrikus bejelentkezés");
+                        Intent intent = new Intent(MainActivity.this, Shopping.class);
+                        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
+                        startActivity(intent, options.toBundle());
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(MainActivity.this, "Hiba: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    });
+        } else {
+            Toast.makeText(this, "Nincsenek mentett bejelentkezési adatok",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void biometricLogin(View view) {
+        if (isBiometricAvailable()) {
+            showBiometricPrompt();
+        } else {
+            Toast.makeText(this, "A biometrikus azonosítás nem érhető el ezen az eszközön",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private boolean isBiometricAvailable() {
+        BiometricManager biometricManager = BiometricManager.from(this);
+        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                == BiometricManager.BIOMETRIC_SUCCESS;
+    }
+    private void saveCredentialsForBiometric(String email, String password) {
+        SharedPreferences securePrefs = getSharedPreferences("secure_prefs", MODE_PRIVATE);
+        securePrefs.edit()
+                .putString("email", email)
+                .putString("password", password)
+                .apply();
     }
 }
