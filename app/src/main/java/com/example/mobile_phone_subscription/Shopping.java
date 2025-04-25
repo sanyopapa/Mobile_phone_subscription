@@ -1,10 +1,6 @@
 package com.example.mobile_phone_subscription;
 
 import android.app.ActivityOptions;
-import android.app.AlertDialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -23,16 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -63,13 +55,7 @@ public class Shopping extends AppCompatActivity {
 
         View linearLayout = findViewById(R.id.main);
 
-        ViewCompat.setOnApplyWindowInsetsListener(linearLayout, (v, insets) -> {
-            Insets systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            layoutParams.topMargin = systemBarsInsets.top;
-            v.setLayoutParams(layoutParams);
-            return insets;
-        });
+        ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
 
         initializeViews();
 

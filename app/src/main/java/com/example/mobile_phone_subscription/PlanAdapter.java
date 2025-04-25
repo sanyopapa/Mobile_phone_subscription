@@ -108,7 +108,7 @@
 
         private void deletePlan(Plan plan, int position) {
             if (plan.getId() == null || plan.getId().isEmpty()) {
-                Toast.makeText(context, "Plan azonosító hiányzik!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Csomag azonosító hiányzik!", Toast.LENGTH_SHORT).show();
                 Log.e("PlanAdapter", "Hiányzó plan ID törléskor: " + plan.getName());
                 return;
             }
@@ -127,7 +127,7 @@
                 .addOnSuccessListener(aVoid -> {
                     planList.remove(position);
                     notifyItemRemoved(position);
-                    Toast.makeText(context, "Plan sikeresen törölve!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Csomag sikeresen törölve!", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e -> {
                     Log.e("PlanAdapter", "Hiba a plan törlésekor", e);

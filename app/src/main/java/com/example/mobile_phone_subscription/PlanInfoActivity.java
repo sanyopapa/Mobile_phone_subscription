@@ -2,11 +2,9 @@ package com.example.mobile_phone_subscription;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
+import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,8 +17,6 @@ import android.Manifest;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -60,11 +56,7 @@ public class PlanInfoActivity extends AppCompatActivity {
         buttonBack.setOnClickListener(view -> goToShopping());
         buttonPurchase.setOnClickListener(view -> purchase());
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
     }
 
     private void checkUserStatus() {
@@ -92,18 +84,50 @@ public class PlanInfoActivity extends AppCompatActivity {
         }
     }
 
-    private void purchase() {
+   private void purchase() {
         FirebaseUser user = mAuth.getCurrentUser();
 
         if (user != null && !user.isAnonymous()) {
-            // Megvásárlás logika
-            Toast.makeText(PlanInfoActivity.this,
-                    "Sikeresen megvásároltad: " + planName,
-                    Toast.LENGTH_SHORT).show();
+            int price = getIntent().getIntExtra("PLAN_PRICE", 0);
 
-            // Értesítés küldése a vásárlásról
-            sendPurchaseNotification(planName);
-            finish();
+            // Store all subscription details
+            FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                .update(
+                    "subscriptionId", planId,
+                    "subscriptionName", planName,
+                    "subscriptionPrice", price
+                )
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(PlanInfoActivity.this,
+                            "Sikeresen megvásároltad: " + planName,
+                            Toast.LENGTH_SHORT).show();
+
+                    // Értesítési jogosultság ellenőrzése
+                    if (NotificationHelper.hasNotificationPermission(this)) {
+                        NotificationHelper.sendPurchaseNotification(this, planName);
+
+                        // Exact alarm jogosultság ellenőrzése
+                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                                alarmManager.canScheduleExactAlarms()) {
+                            SubscriptionReminder.setReminderAlarm(this, planName);
+                        } else {
+                            Log.d(LOG_TAG, "Exact alarm permission needed");
+                        }
+
+                        goToProfile();
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                NOTIFICATION_PERMISSION_CODE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(LOG_TAG, "Hiba az előfizetés mentésekor", e);
+                    Toast.makeText(PlanInfoActivity.this,
+                            "Hiba történt a vásárlás mentésekor: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
         } else {
             Toast.makeText(PlanInfoActivity.this,
                     "Kérlek jelentkezz be a vásárláshoz!",
@@ -111,43 +135,15 @@ public class PlanInfoActivity extends AppCompatActivity {
         }
     }
 
-    private void sendPurchaseNotification(String planName) {
-        // Ellenőrizzük és kérjük az engedélyt, ha szükséges
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        NOTIFICATION_PERMISSION_CODE);
-                return;
-            }
-        }
-
-        // Notification csatorna létrehozása (Android 8.0+)
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    "purchase_channel",
-                    "Vásárlási értesítések",
-                    NotificationManager.IMPORTANCE_DEFAULT);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        // Értesítés létrehozása
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "purchase_channel")
-                .setSmallIcon(R.drawable.ic_shop)
-                .setContentTitle("Sikeres előfizetés")
-                .setContentText("Sikeresen előfizettél a következő csomagra: " + planName)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
-
-        notificationManager.notify(1, builder.build());
-    }
-
     private void goToShopping() {
         Intent intent = new Intent(this, Shopping.class);
         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(PlanInfoActivity.this);
+        startActivity(intent, options.toBundle());
+        finish();
+    }
+    private void goToProfile(){
+        Intent intent = new Intent(this, Profile.class);
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
         startActivity(intent, options.toBundle());
         finish();
     }

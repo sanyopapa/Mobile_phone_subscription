@@ -70,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
             preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
 
             mAuth = FirebaseAuth.getInstance();
+
+            NotificationHelper.createNotificationChannels(this);
+
             return insets;
         });
     }

@@ -1,14 +1,17 @@
 package com.example.mobile_phone_subscription;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,7 +32,10 @@ public class Profile extends AppCompatActivity {
     private Button buttonSave, buttonReset;
     private FirebaseUser user;
     private FirebaseFirestore firestore;
-
+    private LinearLayout subscriptionContainer;
+    private TextView textViewSubscriptionName, textViewSubscriptionDetails, textViewSubscriptionPrice, textViewNoSubscription;
+    private Button buttonCancelSubscription;
+    private String subscriptionId;
     private View linearLayout;
 
     @Override
@@ -40,6 +46,7 @@ public class Profile extends AppCompatActivity {
         firestore = FirebaseFirestore.getInstance();
         initializeViews();
         setupToolbar();
+        ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
         loadUserData();
 
         buttonSave.setOnClickListener(v -> saveUserData());
@@ -70,11 +77,9 @@ public class Profile extends AppCompatActivity {
             return;
         }
 
-        // Frissítsük a felhasználói adatokat, hogy mindig a legfrissebb adatokat mutassuk
         user = currentUser;
         loadUserData();
 
-        // Frissítsük a menüt a felhasználói jogosultságok alapján
         invalidateOptionsMenu();
     }
 
@@ -89,21 +94,22 @@ public class Profile extends AppCompatActivity {
         editTextPasswordAgain = findViewById(R.id.editTextPasswordAgain);
         buttonSave = findViewById(R.id.buttonSave);
         buttonReset = findViewById(R.id.buttonReset);
+
+        // Initialize subscription UI elements
+        subscriptionContainer = findViewById(R.id.subscriptionContainer);
+        textViewSubscriptionName = findViewById(R.id.textViewSubscriptionName);
+        textViewSubscriptionDetails = findViewById(R.id.textViewSubscriptionDetails);
+        textViewSubscriptionPrice = findViewById(R.id.textViewSubscriptionPrice);
+        textViewNoSubscription = findViewById(R.id.textViewNoSubscription);
+        buttonCancelSubscription = findViewById(R.id.buttonCancelSubscription);
+
+        // Setup cancel subscription button
+        buttonCancelSubscription.setOnClickListener(v -> cancelSubscription());
     }
 
     private void setupToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        linearLayout = findViewById(R.id.main);
-
-        ViewCompat.setOnApplyWindowInsetsListener(linearLayout, (v, insets) -> {
-            Insets systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            layoutParams.topMargin = systemBarsInsets.top;
-            v.setLayoutParams(layoutParams);
-            return insets;
-        });
     }
 
     private void loadUserData() {
@@ -118,9 +124,18 @@ public class Profile extends AppCompatActivity {
                         if (documentSnapshot.exists()) {
                             String name = documentSnapshot.getString("name");
                             String phone = documentSnapshot.getString("phone");
+                            subscriptionId = documentSnapshot.getString("subscriptionId");
 
                             editTextName.setText(name != null ? name : "");
                             editTextPhone.setText(phone != null ? phone : "");
+
+                            // Load subscription details if available
+                            if (subscriptionId != null && !subscriptionId.isEmpty()) {
+                                loadSubscriptionDetails(subscriptionId);
+                            } else {
+                                subscriptionContainer.setVisibility(View.GONE);
+                                textViewNoSubscription.setVisibility(View.VISIBLE);
+                            }
                         } else {
                             showToast("Nem találtam betöltendő adatot!");
                         }
@@ -192,5 +207,49 @@ public class Profile extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    // Add method to load subscription details
+    @SuppressLint("DefaultLocale")
+    private void loadSubscriptionDetails(String planId) {
+        firestore.collection("plans").document(planId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Plan plan = documentSnapshot.toObject(Plan.class);
+                        if (plan != null) {
+                            // Display subscription details
+                            textViewSubscriptionName.setText(plan.getName());
+                            textViewSubscriptionDetails.setText(plan.getDetails());
+                            textViewSubscriptionPrice.setText(String.format("%d Ft/hó", plan.getPrice()));
+
+                            subscriptionContainer.setVisibility(View.VISIBLE);
+                            textViewNoSubscription.setVisibility(View.GONE);
+                        }
+                    } else {
+                        showToast("Az előfizetés adatai nem találhatók!");
+                        subscriptionContainer.setVisibility(View.GONE);
+                        textViewNoSubscription.setVisibility(View.VISIBLE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    showToast("Hiba történt az előfizetés adatainak betöltésekor!");
+                    Log.e("Profile", "Error loading subscription", e);
+                });
+    }
+
+    // Add method to cancel subscription
+    private void cancelSubscription() {
+        if (user != null && subscriptionId != null) {
+            firestore.collection("users").document(user.getUid())
+                    .update("subscriptionId", null)
+                    .addOnSuccessListener(aVoid -> {
+                        showToast("Előfizetés sikeresen lemondva!");
+                        subscriptionContainer.setVisibility(View.GONE);
+                        textViewNoSubscription.setVisibility(View.VISIBLE);
+                        subscriptionId = null;
+                    })
+                    .addOnFailureListener(e -> showToast("Hiba történt az előfizetés lemondásakor!"));
+        }
     }
 }
