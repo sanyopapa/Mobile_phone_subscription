@@ -10,7 +10,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 import android.Manifest;
 
@@ -28,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
@@ -41,7 +45,13 @@ public class Shopping extends AppCompatActivity {
     private Button buttonPurchase, buttonAddNewPlan;
     private List<Plan> planList;
     private PlanAdapter planAdapter;
+    private EditText editTextSearch, editTextMinPrice, editTextMaxPrice;
+    private Spinner spinnerType;
+    private Button buttonApplyFilters;
     private FirebaseFirestore firestore;
+    private boolean firstResume = true;
+    private PlanFilterHelper planFilterHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,8 +62,6 @@ public class Shopping extends AppCompatActivity {
         // Toolbar inicializálása
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        View linearLayout = findViewById(R.id.main);
 
         ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
 
@@ -74,11 +82,26 @@ public class Shopping extends AppCompatActivity {
 
         // Adatok betöltése
         loadPlansFromFirestore();
+
+        buttonApplyFilters.setOnClickListener(v -> applyFilters());
+        spinnerType = findViewById(R.id.spinnerType);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.plan_types, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerType.setAdapter(adapter);
+
+        planFilterHelper = new PlanFilterHelper();
+
+        firstResume = true;
     }
     @Override
     protected void onResume() {
         super.onResume();
 
+        if (firstResume) {
+            firstResume = false;
+            return;
+        }
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null && user != null) {
             if (currentUser.getUid().equals(user.getUid())) {
@@ -178,60 +201,61 @@ public class Shopping extends AppCompatActivity {
         planAdapter = new PlanAdapter(planList, isAnonymous, isAdmin);
         recyclerViewPlans.setAdapter(planAdapter);
     }
-    private void loadPlansFromFirestore() {
-        firestore.collection("plans")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    planList.clear();
 
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Log.d(LOG_TAG, "Nincsenek termékek a Firestore-ban");
-                        addDefaultPlansToFirestore();
-                    } else {
-                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                            Plan plan = document.toObject(Plan.class);
-                            plan.setId(document.getId());
-                            Log.d(LOG_TAG, "Plan betöltve ID-val: " + plan.getId());
-                            planList.add(plan);
-                        }
-                        planAdapter.notifyDataSetChanged();
+private void loadPlansFromFirestore() {
+    firestore.collection("plans")
+            .get()
+            .addOnSuccessListener(queryDocumentSnapshots -> {
+                planList.clear();
+
+                if (queryDocumentSnapshots.isEmpty()) {
+                    Log.d(LOG_TAG, "Nincsenek termékek a Firestore-ban");
+                    addDefaultPlansToFirestore();
+                } else {
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Plan plan = document.toObject(Plan.class);
+                        plan.setId(document.getId());
+                        planList.add(plan);
                     }
+                    planAdapter.notifyDataSetChanged();
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(LOG_TAG, "Error loading plans", e);
+                Toast.makeText(Shopping.this, "Hiba történt a termékek betöltésekor: "
+                        + e.getMessage(), Toast.LENGTH_SHORT).show();
+                addDefaultPlansToAdapter();
+            });
+}
+
+private void addDefaultPlansToFirestore() {
+    List<Plan> defaultPlans = getDefaultPlans();
+
+    for (Plan plan : defaultPlans) {
+        firestore.collection("plans")
+                .add(plan)
+                .addOnSuccessListener(documentReference -> {
+                    plan.setId(documentReference.getId());
+                    documentReference.update("id", plan.getId());
+                    planList.add(plan);
+                    planAdapter.notifyDataSetChanged();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(LOG_TAG, "Error loading plans", e);
-                    Toast.makeText(Shopping.this, "Hiba történt a termékek betöltésekor: "
-                            + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    addDefaultPlansToAdapter();
+                    Log.e(LOG_TAG, "Error adding default plan", e);
                 });
     }
-    private void addDefaultPlansToFirestore() {
-        List<Plan> defaultPlans = getDefaultPlans();
+}
 
-        for (Plan plan : defaultPlans) {
-            firestore.collection("plans")
-                    .add(plan)
-                    .addOnSuccessListener(documentReference -> {
-                        plan.setId(documentReference.getId());
-                        documentReference.update("id", plan.getId());
-                        planList.add(plan);
-                        planAdapter.notifyDataSetChanged();
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(LOG_TAG, "Error adding default plan", e);
-                    });
-        }
+private void addDefaultPlansToAdapter() {
+    planList.clear();
+    List<Plan> defaultPlans = getDefaultPlans();
+    for (int i = 0; i < defaultPlans.size(); i++) {
+        Plan plan = defaultPlans.get(i);
+        plan.setId("local_" + i);
+        planList.add(plan);
     }
-    // Alapértelmezett termékek hozzáadása az adapterhez (Firestore hiba esetén)
-    private void addDefaultPlansToAdapter() {
-        planList.clear();
-        List<Plan> defaultPlans = getDefaultPlans();
-        for (int i = 0; i < defaultPlans.size(); i++) {
-            Plan plan = defaultPlans.get(i);
-            plan.setId("local_" + i);
-            planList.add(plan);
-        }
-        planAdapter.notifyDataSetChanged();
-    }
+    planAdapter.notifyDataSetChanged();
+}
 
     // Alapértelmezett termékek létrehozása
     private List<Plan> getDefaultPlans() {
@@ -252,7 +276,6 @@ public class Shopping extends AppCompatActivity {
         planAdapter = new PlanAdapter(planList, user.isAnonymous(), isAdmin);
         recyclerViewPlans.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewPlans.setAdapter(planAdapter);
-        loadPlansFromFirestore();
     }
     private void openPlanEditor() {
         Intent intent = new Intent(this, PlanEditActivity.class);
@@ -267,10 +290,62 @@ public class Shopping extends AppCompatActivity {
         recyclerViewPlans = findViewById(R.id.recyclerViewPlans);
         buttonPurchase = findViewById(R.id.buttonPurchase);
         buttonAddNewPlan = findViewById(R.id.buttonAddNewPlan);
+        editTextSearch = findViewById(R.id.editTextSearch);
+        editTextMinPrice = findViewById(R.id.editTextMinPrice);
+        editTextMaxPrice = findViewById(R.id.editTextMaxPrice);
+        spinnerType = findViewById(R.id.spinnerType);
+        buttonApplyFilters = findViewById(R.id.buttonApplyFilters);
     }
 
     /**
-     * A vásárlás logikáját megvalósító metódus
+     * Szűrők alkalmazása a csomagok listájára
+     */
+
+    private void applyFilters() {
+        String searchQuery = editTextSearch.getText().toString().trim();
+        String selectedType = spinnerType.getSelectedItem() != null ? spinnerType.getSelectedItem().toString() : "Népszerűek";
+        String minPriceText = editTextMinPrice.getText().toString().trim();
+        String maxPriceText = editTextMaxPrice.getText().toString().trim();
+
+        int minPrice = minPriceText.isEmpty() ? 0 : Integer.parseInt(minPriceText);
+        int maxPrice = maxPriceText.isEmpty() ? Integer.MAX_VALUE : Integer.parseInt(maxPriceText);
+
+        Query query;
+
+        if (!searchQuery.isEmpty()) {
+            query = planFilterHelper.filterByNameWithLimit(searchQuery, 50);
+        } else if (!minPriceText.isEmpty() || !maxPriceText.isEmpty()) {
+            query = planFilterHelper.filterByPriceRangeWithLimit(minPrice, maxPrice, 50);
+        } else if (selectedType.equals("Népszerűek")) {
+            query = planFilterHelper.sortByPopularity(50);
+        } else if (selectedType.equals("Drágák")) {
+            query = planFilterHelper.sortByPriceDescending(50);
+        } else if (selectedType.equals("Olcsók")) {
+            query = planFilterHelper.sortByPriceAscending(50);
+        } else {
+            query = firestore.collection("plans").limit(50);
+        }
+
+        loadPlans(query);
+    }
+
+    private void loadPlans(Query query) {
+        query.get().addOnSuccessListener(queryDocumentSnapshots -> {
+            planList.clear();
+            queryDocumentSnapshots.forEach(document -> {
+                Plan plan = document.toObject(Plan.class);
+                plan.setId(document.getId());
+                planList.add(plan);
+            });
+            planAdapter.notifyDataSetChanged();
+        }).addOnFailureListener(e -> {
+            Log.e(LOG_TAG, "Error loading plans", e);
+            Toast.makeText(this, "Hiba történt a csomagok betöltésekor.", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * A vásárlás oldalra továbbító metódus
      */
     private void purchaseSelectedPlan() {
         Plan selectedPlan = planAdapter.getSelectedPlan();

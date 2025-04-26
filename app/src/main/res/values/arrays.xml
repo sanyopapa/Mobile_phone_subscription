@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="plan_types">
+        <item>Népszerűek</item>
+        <item>Drágák</item>
+        <item>Olcsók</item>
+    </string-array>
+</resources>

@@ -2,7 +2,7 @@ package com.example.mobile_phone_subscription;
 
     public class Plan {
         private String id, description, imageUrl, details, name;
-        private int price;
+        private int price, subscribers;
         public Plan() {
             // Default constructor required for Firestore
         }
@@ -13,6 +13,7 @@ package com.example.mobile_phone_subscription;
             this.price = price;
             this.imageUrl = imageUrl;
             this.description = "leiras";
+            this.subscribers = 0;
         }
 
         public String getId() {
@@ -46,4 +47,8 @@ package com.example.mobile_phone_subscription;
         public String getDescription() {return description;}
 
         public void setDescription(String description) {this.description = description;}
+
+        public int getSubscribers() {return subscribers;}
+
+        public void setSubscribers(int subscribers) {this.subscribers = subscribers;}
     }

@@ -28,6 +28,51 @@
             android:text="Új csomag hozzáadása"
             android:visibility="gone" />
 
+        <EditText
+            android:id="@+id/editTextSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Keresés név alapján"
+            android:inputType="text" />
+
+        <Spinner
+                android:id="@+id/spinnerType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:entries="@array/plan_types"
+                android:prompt="@string/spinner_prompt" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <EditText
+                android:id="@+id/editTextMinPrice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Min. ár"
+                android:inputType="number" />
+
+            <EditText
+                android:id="@+id/editTextMaxPrice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Max. ár"
+                android:inputType="number" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/buttonApplyFilters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Szűrés" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewPlans"
             android:layout_width="match_parent"

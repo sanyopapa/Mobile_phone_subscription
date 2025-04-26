@@ -22,6 +22,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class Profile extends AppCompatActivity {
@@ -277,6 +278,8 @@ public class Profile extends AppCompatActivity {
                                                     new String[]{Manifest.permission.POST_NOTIFICATIONS},
                                                     100);
                                         }
+                                        firestore.collection("plans").document(subscriptionId)
+                                            .update("subscribers", FieldValue.increment(-1));
                                     })
                                     .addOnFailureListener(e -> showToast("Hiba történt az előfizetés lemondásakor!"));
                         })

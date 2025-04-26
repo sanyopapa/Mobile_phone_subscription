@@ -23,6 +23,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class PlanInfoActivity extends AppCompatActivity {
@@ -119,6 +120,8 @@ private void purchase() {
                                 new String[]{Manifest.permission.POST_NOTIFICATIONS},
                                 NOTIFICATION_PERMISSION_CODE);
                     }
+                    FirebaseFirestore.getInstance().collection("plans").document(planId)
+                        .update("subscribers", FieldValue.increment(1));
                 })
                 .addOnFailureListener(e -> {
                     Log.e(LOG_TAG, "Hiba az előfizetés mentésekor", e);
