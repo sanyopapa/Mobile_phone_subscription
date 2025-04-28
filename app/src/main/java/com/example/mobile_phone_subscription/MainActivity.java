@@ -1,7 +1,5 @@
 package com.example.mobile_phone_subscription;
 
-import android.app.ActivityOptions;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,41 +17,25 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.safetynet.SafetyNet;
-import com.google.android.gms.safetynet.SafetyNetApi;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseException;
-import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.PhoneAuthCredential;
-import com.google.firebase.auth.PhoneAuthOptions;
-import com.google.firebase.auth.PhoneAuthProvider;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.text.InputType;
-
-
+/**
+ * Az alkalmazás fő Activity-je, amely a bejelentkezési és regisztrációs funkciókat kezeli.
+ * A felhasználók bejelentkezhetnek e-mail és jelszó megadásával, vagy biometrikus azonosítással.
+ */
 public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getName();
     private static final String PEF_KEY = Objects.requireNonNull(MainActivity.class.getPackage()).toString();
     private SharedPreferences preferences;
     private static final int SECRET_KEY = 99;
     private FirebaseAuth mAuth;
-    private String verificationId;
-    private PhoneAuthProvider.ForceResendingToken resendToken;
-    EditText userNameET;
-    EditText passwordET;
+    EditText userNameET, passwordET;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +46,7 @@ public class MainActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-            userNameET = findViewById(R.id.editTextEmail);
-            passwordET = findViewById(R.id.editTextPassword);
+            initializeViews();
 
             preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
 
@@ -77,6 +58,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Az Activity újraindításakor hívódik meg, például amikor az előtérbe kerül.
+     * Ellenőrzi, hogy van-e anonim felhasználó, és törli azt.
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -96,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Az Activity szüneteltetésekor hívódik meg, elmenti a felhasználónév és jelszó mezők tartalmát.
+     */
     @Override
     protected void onPause() {
         super.onPause();
@@ -106,11 +94,15 @@ public class MainActivity extends AppCompatActivity {
         Log.i(LOG_TAG, "onPause");
     }
 
+    /**
+     * A bejelentkezési folyamatot indítja el a megadott e-mail és jelszó alapján.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void login(View view) {
         String input = userNameET.getText().toString().trim();
         String password = passwordET.getText().toString().trim();
 
-        // Ellenőrizd, hogy a mezők nincsenek-e üresen
+        // Ellenőrzés, hogy a mezők nincsenek-e üresen
         if (input.isEmpty() || password.isEmpty()) {
             Toast.makeText(this, "Kérlek töltsd ki az összes mezőt!", Toast.LENGTH_SHORT).show();
             return;
@@ -122,9 +114,7 @@ public class MainActivity extends AppCompatActivity {
                 if (task.isSuccessful()) {
                     Log.d(LOG_TAG, "signInWithEmail:success");
                     saveCredentialsForBiometric(input, password);
-                    Intent intent = new Intent(MainActivity.this, Shopping.class);
-                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
-                    startActivity(intent, options.toBundle());
+                    NavigationHelper.toShopping(MainActivity.this);
                 } else {
                     Log.w(LOG_TAG, "signInWithEmail:failure", task.getException());
                     Toast.makeText(MainActivity.this, "Hibás bejelentkezési adatok.", Toast.LENGTH_SHORT).show();
@@ -133,29 +123,36 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Átnavigál a regisztrációs oldalra.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void toRegister(View view) {
-        Intent intent = new Intent(this, Register.class);
-        intent.putExtra("SECRET_KEY", SECRET_KEY);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
-        startActivity(intent, options.toBundle());
+        NavigationHelper.toRegisterWithFade(MainActivity.this, SECRET_KEY);
     }
 
+    /**
+     * Anonim bejelentkezést hajt végre, majd átnavigál a vásárlási oldalra.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void toLoginAnonymously(View view) {
         mAuth.signInAnonymously().addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
                     Log.d(LOG_TAG, "signInAnonymously:success");
-                    Intent intent = new Intent(MainActivity.this, Shopping.class);
-                    ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
-                    startActivity(intent, options.toBundle());
+                    NavigationHelper.toShopping(MainActivity.this);
                 } else {
                     Log.w(LOG_TAG, "signInAnonymously:failure", task.getException());
-                    Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Sikertelen belépés", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
+
+    /**
+     * Megjeleníti a biometrikus azonosítási ablakot, ha elérhető.
+     */
     private void showBiometricPrompt() {
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Biometrikus bejelentkezés")
@@ -191,6 +188,9 @@ public class MainActivity extends AppCompatActivity {
         biometricPrompt.authenticate(promptInfo);
     }
 
+    /**
+     * A mentett bejelentkezési adatokkal próbál bejelentkezni biometrikus azonosítás után.
+     */
     private void signInWithSavedCredentials() {
         // Tárolt bejelentkezési adatok lekérése biztonságos tárolóból
         SharedPreferences securePrefs = getSharedPreferences("secure_prefs", MODE_PRIVATE);
@@ -201,9 +201,7 @@ public class MainActivity extends AppCompatActivity {
             mAuth.signInWithEmailAndPassword(email, password)
                     .addOnSuccessListener(authResult -> {
                         Log.d(LOG_TAG, "Sikeres biometrikus bejelentkezés");
-                        Intent intent = new Intent(MainActivity.this, Shopping.class);
-                        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(MainActivity.this);
-                        startActivity(intent, options.toBundle());
+                        NavigationHelper.toShopping(MainActivity.this);
                     })
                     .addOnFailureListener(e -> {
                         Toast.makeText(MainActivity.this, "Hiba: " + e.getMessage(),
@@ -215,6 +213,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Biometrikus bejelentkezést indít, ha az eszköz támogatja.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void biometricLogin(View view) {
         if (isBiometricAvailable()) {
             showBiometricPrompt();
@@ -224,16 +226,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Ellenőrzi, hogy elérhető-e biometrikus azonosítás az eszközön.
+     * @return true, ha elérhető, különben false.
+     */
     private boolean isBiometricAvailable() {
         BiometricManager biometricManager = BiometricManager.from(this);
         return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 == BiometricManager.BIOMETRIC_SUCCESS;
     }
+
+    /**
+     * Elmenti a bejelentkezési adatokat a biometrikus bejelentkezéshez.
+     * @param email A felhasználó e-mail címe.
+     * @param password A felhasználó jelszava.
+     */
     private void saveCredentialsForBiometric(String email, String password) {
         SharedPreferences securePrefs = getSharedPreferences("secure_prefs", MODE_PRIVATE);
         securePrefs.edit()
                 .putString("email", email)
                 .putString("password", password)
                 .apply();
+    }
+
+    /**
+     * Inicializálja az Activity-hez tartozó elemeket.
+     */
+    private void initializeViews() {
+        userNameET = findViewById(R.id.editTextEmail);
+        passwordET = findViewById(R.id.editTextPassword);
     }
 }

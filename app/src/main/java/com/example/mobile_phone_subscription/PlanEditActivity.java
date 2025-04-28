@@ -1,6 +1,5 @@
 package com.example.mobile_phone_subscription;
 
-import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +12,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * Csomag szerkesztéséért felelős Activity osztály.
+ * Lehetővé teszi új csomag létrehozását vagy meglévő csomagok szerkesztését.
+ */
 public class PlanEditActivity extends AppCompatActivity {
     private static final String LOG_TAG = PlanEditActivity.class.getName();
     private EditText editTextName, editTextDetails, editTextPrice, editTextDescription;
@@ -29,6 +32,9 @@ public class PlanEditActivity extends AppCompatActivity {
 
         // ViewInsetsHelper használata az egységes megjelenítéshez
         ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
+
+        // Firestore inicializálása
+        firestore = FirebaseFirestore.getInstance();
 
         // A nézetek inicializálása
         initializeViews();
@@ -50,9 +56,6 @@ public class PlanEditActivity extends AppCompatActivity {
         editTextDescription = findViewById(R.id.editTextPlanDescription);
         buttonSave = findViewById(R.id.buttonSavePlan);
         buttonCancel = findViewById(R.id.buttonCancelEdit);
-
-        // Firestore inicializálása
-        firestore = FirebaseFirestore.getInstance();
     }
 
     /**
@@ -92,6 +95,7 @@ public class PlanEditActivity extends AppCompatActivity {
 
         buttonCancel.setOnClickListener(view -> {
             Log.d(LOG_TAG, "Mégse gomb megnyomva");
+            NavigationHelper.toShoppingWithFade(PlanEditActivity.this);
             finish();
         });
     }
@@ -138,6 +142,7 @@ public class PlanEditActivity extends AppCompatActivity {
                         .addOnSuccessListener(aVoid -> {
                             Log.d(LOG_TAG, "Csomag sikeresen frissítve!");
                             Toast.makeText(PlanEditActivity.this, "Csomag sikeresen frissítve!", Toast.LENGTH_SHORT).show();
+                            NavigationHelper.toShoppingWithFade(PlanEditActivity.this);
                             finish();
                         })
                         .addOnFailureListener(e -> {
@@ -153,6 +158,7 @@ public class PlanEditActivity extends AppCompatActivity {
                             documentReference.update("id", id);
                             Log.d(LOG_TAG, "Csomag sikeresen hozzáadva ID-val: " + id);
                             Toast.makeText(PlanEditActivity.this, "Csomag sikeresen hozzáadva!", Toast.LENGTH_SHORT).show();
+                            NavigationHelper.toShoppingWithFade(PlanEditActivity.this);
                             finish();
                         })
                         .addOnFailureListener(e -> {

@@ -8,10 +8,18 @@ import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
+/**
+ * Előfizetés emlékeztető osztály.
+ * Emlékeztetőt állít be a felhasználó számára, hogy ne felejtse el megújítani az előfizetését.
+ */
 public class SubscriptionReminder extends BroadcastReceiver {
     private static final String TAG = "SubscriptionReminder";
     public static final String EXTRA_PLAN_NAME = "PLAN_NAME";
 
+    /*
+     * Emlékeztető értesítés küldése
+     * A BroadcastReceiver osztály onReceive() metódusában hívjuk meg
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         String planName = intent.getStringExtra(EXTRA_PLAN_NAME);
@@ -22,7 +30,12 @@ public class SubscriptionReminder extends BroadcastReceiver {
         }
     }
 
-    // Emlékeztető beállítása
+    /**
+     * Emlékeztető beállítása
+     * 24 órával későbbre állítja be az emlékeztetőt
+     * @param context A kontextus, amelyből az emlékeztetőt beállítjuk
+     * @param planName A csomag neve, amelyhez az emlékeztető tartozik
+     */
     public static void setReminderAlarm(Context context, String planName) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
@@ -62,7 +75,11 @@ public class SubscriptionReminder extends BroadcastReceiver {
         }
     }
 
-    // Emlékeztető törlése
+    /**
+     * Törli az emlékeztetőt, ha már nem szükséges
+     * @param context A kontextus, amelyből a törlést végrehajtjuk
+     * @param planName A csomag neve, amelyhez az emlékeztető tartozik
+     */
     public static void cancelReminderAlarm(Context context, String planName) {
         Intent intent = new Intent(context, SubscriptionReminder.class);
 

@@ -18,16 +18,19 @@ public class NotificationHelper {
     private static final String CANCEL_CHANNEL_ID = "cancel_channel";
 
 
-    // Notification IDs
+    // Notification IDk
     public static final int PURCHASE_NOTIFICATION_ID = 1;
     public static final int REMINDER_NOTIFICATION_ID = 2;
     public static final int CANCEL_NOTIFICATION_ID = 3;
 
-    // Notification csatornák létrehozása
+    /*
+     * Értesítési csatornák létrehozása
+     * Android 8.0 (API 26) és újabb verziókhoz szükséges
+     */
     public static void createNotificationChannels(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
             // Vásárlási csatorna
             NotificationChannel purchaseChannel = new NotificationChannel(
@@ -54,6 +57,9 @@ public class NotificationHelper {
         }
     }
 
+    /**
+     * Értesítés küldése előfizetés vásárlásakor
+     */
     public static void sendPurchaseNotification(Context context, String planName) {
         // Intent létrehozása a Profile aktivitáshoz
         Intent intent = new Intent(context, Profile.class);
@@ -80,6 +86,9 @@ public class NotificationHelper {
         notificationManager.notify(PURCHASE_NOTIFICATION_ID, builder.build());
     }
 
+    /**
+     * Értesítés küldése emlékeztetőként
+     */
     public static void sendReminderNotification(Context context, String planName) {
         // Intent létrehozása a Profile aktivitáshoz
         Intent intent = new Intent(context, Profile.class);
@@ -135,7 +144,9 @@ public class NotificationHelper {
         notificationManager.notify(CANCEL_NOTIFICATION_ID, builder.build());
     }
 
-    // Értesítési engedély ellenőrzése (Android 13+)
+    /**
+     * Ellenőrzi, hogy van-e engedély az értesítés küldéshez
+     */
     public static boolean hasNotificationPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)

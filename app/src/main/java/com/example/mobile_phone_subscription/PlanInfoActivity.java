@@ -1,7 +1,6 @@
 package com.example.mobile_phone_subscription;
 
 import android.annotation.SuppressLint;
-import android.app.ActivityOptions;
 import android.app.AlarmManager;
 import android.content.Context;
 import android.content.Intent;
@@ -17,15 +16,16 @@ import android.Manifest;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * Csomag információs Activity osztály.
+ * Megjeleníti a csomag részleteit és lehetőséget biztosít a vásárlásra.
+ */
 public class PlanInfoActivity extends AppCompatActivity {
     private static final String LOG_TAG = PlanInfoActivity.class.getName();
     private TextView textViewPlanName, textViewPlanDetails, textViewPlanPrice, textViewPlanDescription;
@@ -60,6 +60,11 @@ public class PlanInfoActivity extends AppCompatActivity {
         ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
     }
 
+    /**
+     * Ellenőrzi a felhasználó státuszát (anonim vagy regisztrált, vagy admin)
+     * és ennek megfelelően kezeli a vásárlás gomb láthatóságát.
+     * Ha a felhasználó anonim, vagy admin, akkor elrejti a vásárlás gombot, egyébként megjeleníti.
+     */
     private void checkUserStatus() {
         FirebaseUser user = mAuth.getCurrentUser();
 
@@ -85,68 +90,74 @@ public class PlanInfoActivity extends AppCompatActivity {
         }
     }
 
-private void purchase() {
-    DialogHelper.showPurchaseConfirmationDialog(this, planName, () -> {
-        FirebaseUser user = mAuth.getCurrentUser();
+    /**
+     * Vásárlás gomb eseménykezelője
+     */
+    private void purchase() {
+        DialogHelper.showPurchaseConfirmationDialog(this, planName, () -> {
+            FirebaseUser user = mAuth.getCurrentUser();
 
-        if (user != null && !user.isAnonymous()) {
-            int price = getIntent().getIntExtra("PLAN_PRICE", 0);
+            if (user != null && !user.isAnonymous()) {
+                int price = getIntent().getIntExtra("PLAN_PRICE", 0);
 
-            FirebaseFirestore.getInstance().collection("users").document(user.getUid())
-                .update(
-                    "subscriptionId", planId,
-                    "subscriptionName", planName,
-                    "subscriptionPrice", price
-                )
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(PlanInfoActivity.this,
-                            "Sikeresen megvásároltad: " + planName,
-                            Toast.LENGTH_SHORT).show();
+                FirebaseFirestore.getInstance().collection("users").document(user.getUid())
+                        .update(
+                                "subscriptionId", planId,
+                                "subscriptionName", planName,
+                                "subscriptionPrice", price
+                        )
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(PlanInfoActivity.this,
+                                    "Sikeresen megvásároltad: " + planName,
+                                    Toast.LENGTH_SHORT).show();
 
-                    if (NotificationHelper.hasNotificationPermission(this)) {
-                        NotificationHelper.sendPurchaseNotification(this, planName);
+                            if (NotificationHelper.hasNotificationPermission(this)) {
+                                NotificationHelper.sendPurchaseNotification(this, planName);
 
-                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                                alarmManager.canScheduleExactAlarms()) {
-                            SubscriptionReminder.setReminderAlarm(this, planName);
-                        } else {
-                            Log.d(LOG_TAG, "Exact alarm permission needed");
-                        }
+                                AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                                        alarmManager.canScheduleExactAlarms()) {
+                                    SubscriptionReminder.setReminderAlarm(this, planName);
+                                } else {
+                                    Log.d(LOG_TAG, "Exact alarm permission needed");
+                                }
 
-                        goToProfile();
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        ActivityCompat.requestPermissions(this,
-                                new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                                NOTIFICATION_PERMISSION_CODE);
-                    }
-                    FirebaseFirestore.getInstance().collection("plans").document(planId)
-                        .update("subscribers", FieldValue.increment(1));
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(LOG_TAG, "Hiba az előfizetés mentésekor", e);
-                    Toast.makeText(PlanInfoActivity.this,
-                            "Hiba történt a vásárlás mentésekor: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
-        } else {
-            Toast.makeText(PlanInfoActivity.this,
-                    "Kérlek jelentkezz be a vásárláshoz!",
-                    Toast.LENGTH_SHORT).show();
-        }
-    });
-}
+                                goToProfile();
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                ActivityCompat.requestPermissions(this,
+                                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                        NOTIFICATION_PERMISSION_CODE);
+                            }
+                            FirebaseFirestore.getInstance().collection("plans").document(planId)
+                                    .update("subscribers", FieldValue.increment(1));
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(LOG_TAG, "Hiba az előfizetés mentésekor", e);
+                            Toast.makeText(PlanInfoActivity.this,
+                                    "Hiba történt a vásárlás mentésekor: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                Toast.makeText(PlanInfoActivity.this,
+                        "Kérlek jelentkezz be a vásárláshoz!",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
+    /**
+     * Visszalép a főoldalra
+     */
     private void goToShopping() {
-        Intent intent = new Intent(this, Shopping.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(PlanInfoActivity.this);
-        startActivity(intent, options.toBundle());
+        NavigationHelper.toShoppingWithFade(PlanInfoActivity.this);
         finish();
     }
-    private void goToProfile(){
-        Intent intent = new Intent(this, Profile.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this);
-        startActivity(intent, options.toBundle());
+
+    /**
+     * Navigál a profil oldalra
+     */
+    private void goToProfile() {
+        NavigationHelper.toProfile(PlanInfoActivity.this);
         finish();
     }
 
@@ -166,7 +177,7 @@ private void purchase() {
      * Lekéri az adatokat a paraméterben kapott Intentből
      */
     @SuppressLint("DefaultLocale")
-    private void getDataFromIntent(Intent intent){
+    private void getDataFromIntent(Intent intent) {
         if (intent != null) {
             planId = intent.getStringExtra("PLAN_ID");
             planName = intent.getStringExtra("PLAN_NAME");

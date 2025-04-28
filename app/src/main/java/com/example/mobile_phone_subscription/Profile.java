@@ -25,8 +25,11 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+/**
+ * Profil Activity osztály, amely lehetővé teszi a felhasználók számára, hogy megtekintsék és szerkesszék profiladataikat.
+ * Az adatok mentése a Firestore adatbázisba történik.
+ */
 public class Profile extends AppCompatActivity {
-
     private EditText editTextName, editTextPhone, editTextPassword, editTextPasswordAgain;
     private TextView TextEmail;
     private Button buttonSave, buttonReset;
@@ -94,7 +97,6 @@ public class Profile extends AppCompatActivity {
         buttonSave = findViewById(R.id.buttonSave);
         buttonReset = findViewById(R.id.buttonReset);
 
-        // Initialize subscription UI elements
         subscriptionContainer = findViewById(R.id.subscriptionContainer);
         textViewSubscriptionName = findViewById(R.id.textViewSubscriptionName);
         textViewSubscriptionDetails = findViewById(R.id.textViewSubscriptionDetails);
@@ -102,15 +104,20 @@ public class Profile extends AppCompatActivity {
         textViewNoSubscription = findViewById(R.id.textViewNoSubscription);
         buttonCancelSubscription = findViewById(R.id.buttonCancelSubscription);
 
-        // Setup cancel subscription button
         buttonCancelSubscription.setOnClickListener(v -> cancelSubscription());
     }
 
+    /**
+     * Beállítja a Toolbar-t az Activity-hez
+     */
     private void setupToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
     }
 
+    /**
+     * Betölti a felhasználó adatait a Firestore adatbázisból
+     */
     private void loadUserData() {
         user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
@@ -143,6 +150,9 @@ public class Profile extends AppCompatActivity {
         }
     }
 
+    /**
+     * Mentés gomb eseménykezelője
+     */
     private void saveUserData() {
         String name = editTextName.getText().toString();
         String email = TextEmail.getText().toString();
@@ -171,26 +181,32 @@ public class Profile extends AppCompatActivity {
         });
     }
 
+    /**
+     * Megjelenít egy rövid üzenetet a felhasználónak
+     *
+     * @param message Az üzenet szövege
+     */
     private void showToast(String message) {
         Toast.makeText(Profile.this, message, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Kijelentkezik a felhasználó és visszatér a bejelentkező oldalra
+     *
+     * @param view A nézet, amely a metódust meghívta
+     */
     public void Logout(View view) {
         FirebaseAuth.getInstance().signOut();
-        navigateTo(MainActivity.class);
+        NavigationHelper.toMain(Profile.this);
         finish();
     }
 
-    public void ToShopping(View view) {
-        navigateTo(Shopping.class);
-    }
-
-    private void navigateTo(Class<?> targetActivity) {
-        Intent intent = new Intent(this, targetActivity);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Profile.this);
-        startActivity(intent, options.toBundle());
-    }
-
+    /**
+     * Megjeleníti a menüt az Activity-hez
+     *
+     * @param menu A menü, amelyet meg kell jeleníteni
+     * @return true, ha a menü sikeresen megjelenik
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.shop_list_menu, menu);
@@ -199,6 +215,12 @@ public class Profile extends AppCompatActivity {
         return true;
     }
 
+    /**
+     * Kezeli a menüelemek kiválasztását
+     *
+     * @param item A kiválasztott menüelem
+     * @return true, ha a menüelem sikeresen kezelve lett
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -206,13 +228,17 @@ public class Profile extends AppCompatActivity {
             Logout(null);
             return true;
         } else if (id == R.id.shop_button) {
-            ToShopping(null);
+            NavigationHelper.toShopping(Profile.this);
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    // Add method to load subscription details
+    /**
+     * Betölti az előfizetés részleteit a Firestore adatbázisból
+     *
+     * @param planId Az előfizetés azonosítója
+     */
     @SuppressLint("DefaultLocale")
     private void loadSubscriptionDetails(String planId) {
         firestore.collection("plans").document(planId)
@@ -241,7 +267,9 @@ public class Profile extends AppCompatActivity {
                 });
     }
 
-    // Add method to cancel subscription
+    /**
+     * Lemondja az előfizetést
+     */
     private void cancelSubscription() {
         DialogHelper.showCancelSubscriptionDialog(this, () -> {
             if (user != null && subscriptionId != null) {
@@ -266,9 +294,14 @@ public class Profile extends AppCompatActivity {
                                     .update("subscriptionId", null)
                                     .addOnSuccessListener(aVoid -> {
                                         showToast("Előfizetés sikeresen lemondva!");
+
+                                        firestore.collection("plans").document(subscriptionId)
+                                                .update("subscribers", FieldValue.increment(-1));
+
                                         subscriptionContainer.setVisibility(View.GONE);
                                         textViewNoSubscription.setVisibility(View.VISIBLE);
                                         subscriptionId = null;
+                                        SubscriptionReminder.cancelReminderAlarm(this, planName);
 
                                         // Értesítési jogosultság ellenőrzése és értesítés küldése
                                         if (NotificationHelper.hasNotificationPermission(this)) {
@@ -278,8 +311,6 @@ public class Profile extends AppCompatActivity {
                                                     new String[]{Manifest.permission.POST_NOTIFICATIONS},
                                                     100);
                                         }
-                                        firestore.collection("plans").document(subscriptionId)
-                                            .update("subscribers", FieldValue.increment(-1));
                                     })
                                     .addOnFailureListener(e -> showToast("Hiba történt az előfizetés lemondásakor!"));
                         })

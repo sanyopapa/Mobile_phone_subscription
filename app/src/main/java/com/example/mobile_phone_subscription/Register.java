@@ -1,9 +1,5 @@
 package com.example.mobile_phone_subscription;
 
-import static androidx.core.content.ContextCompat.startActivity;
-
-import android.app.ActivityOptions;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,21 +20,20 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Objects;
 
+/**
+ * Regisztrációs Activity osztály, amely lehetővé teszi új felhasználók regisztrálását.
+ * Az adatok mentése a Firestore adatbázisba történik.
+ */
 public class Register extends AppCompatActivity {
     private static final String LOG_TAG = Register.class.getName();
     private static final String PEF_KEY = Objects.requireNonNull(MainActivity.class.getPackage()).toString();
-    private SharedPreferences preferences;
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabase;
     private FirebaseFirestore firestore;
     private CheckBox checkBoxAdmin;
-    private static final int RC_SIGN_IN = 123;
     EditText newUsernameET, passwordET, passwordAgainET, emailET, phoneET;
 
     @Override
@@ -46,26 +41,15 @@ public class Register extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-            initializeViews();
+        ViewInsetsHelper.setupScrollableLayoutInsets(findViewById(R.id.main));
 
-            preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
-            String username = preferences.getString("username", "");
-            String password = preferences.getString("password", "");
-            emailET.setText(username);
-            passwordET.setText(password);
-            passwordAgainET.setText(password);
+        initializeViews();
 
-            mAuth = FirebaseAuth.getInstance();
-            mDatabase = FirebaseDatabase.getInstance().getReference();
+        mAuth = FirebaseAuth.getInstance();
 
-            firestore = FirebaseFirestore.getInstance();
+        firestore = FirebaseFirestore.getInstance();
 
-            return insets;
-        });
         int secret_key = getIntent().getIntExtra("SECRET_KEY", 0);
 
         if (secret_key != 99) {
@@ -73,6 +57,10 @@ public class Register extends AppCompatActivity {
         }
     }
 
+    /**
+     * Regisztrációs folyamatot indítja el a felhasználó által megadott adatokkal.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void register(View view) {
         String newUsername = newUsernameET.getText().toString().trim();
         String password = passwordET.getText().toString().trim();
@@ -101,15 +89,22 @@ public class Register extends AppCompatActivity {
                     if (user != null) {
                         writeNewUser(user.getUid(), newUsername, email, phone);
                     }
-                    startShopping();
+                    NavigationHelper.toShopping(Register.this);
                 } else {
                     Log.d(LOG_TAG, "createUserWithEmail:failed");
-                    Toast.makeText(Register.this, "Hiba történt: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(Register.this, "Hiba történt: " + Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_LONG).show();
                 }
             }
         });
     }
 
+    /**
+     * Új felhasználó adatainak mentése a Firestore adatbázisba.
+     * @param userId A felhasználó egyedi azonosítója.
+     * @param name A felhasználó neve.
+     * @param email A felhasználó e-mail címe.
+     * @param phone A felhasználó telefonszáma.
+     */
     private void writeNewUser(String userId, String name, String email, String phone) {
         boolean isAdmin = checkBoxAdmin.isChecked();
         User user = new User(name, phone, isAdmin);
@@ -119,20 +114,16 @@ public class Register extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e(LOG_TAG, "Hiba történt a mentés során: ", e));
     }
 
+    /**
+     * Visszalép az előző oldalra, bezárja a regisztrációs Activity-t.
+     * @param view Az a View, amely a metódust meghívta.
+     */
     public void back(View view) {
-        Intent intent = new Intent(this, MainActivity.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Register.this);
-        startActivity(intent, options.toBundle());
-    }
-
-    public void startShopping() {
-        Intent intent = new Intent(Register.this, Shopping.class);
-        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Register.this);
-        startActivity(intent, options.toBundle());
+        NavigationHelper.toMainWithFade(Register.this);
     }
 
     /**
-     * Inicializálja az oldalon lévő elemeket
+     * Inicializálja az oldalon lévő elemeket és betölti a SharedPreferences-ben tárolt adatokat.
      */
     private void initializeViews() {
         newUsernameET = findViewById(R.id.editTextNewUsername);
@@ -141,5 +132,13 @@ public class Register extends AppCompatActivity {
         emailET = findViewById(R.id.editTextTextEmailAddress);
         phoneET = findViewById(R.id.editTextPhone);
         checkBoxAdmin = findViewById(R.id.checkBoxAdmin);
+
+        // Bejelentkezési adatok betöltése a SharedPreferences-ből, ha vannak
+        SharedPreferences preferences = getSharedPreferences(PEF_KEY, MODE_PRIVATE);
+        String username = preferences.getString("username", "");
+        String password = preferences.getString("password", "");
+        emailET.setText(username);
+        passwordET.setText(password);
+        passwordAgainET.setText(password);
     }
 }
